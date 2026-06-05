@@ -1,5 +1,9 @@
 import PageShell from '@/components/ui/PageShell'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+
+const C = { card: { background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', border: '1px solid #e8eaf0' } }
+const ttip = { contentStyle: { borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' } }
+const axis = { axisLine: false, tickLine: false }
 
 const trends = [
   { week: 'W1', mobile: 420, desktop: 380, tablet: 120 },
@@ -11,44 +15,46 @@ const trends = [
 ]
 
 const insights = [
-  { icon: '📱', text: 'Mobile usage growing 12% week-over-week', sentiment: 'positive' },
-  { icon: '🖥️', text: 'Desktop sessions declining — optimize mobile UX', sentiment: 'warning' },
-  { icon: '📈', text: 'Peak activity on Tuesday & Thursday afternoons', sentiment: 'positive' },
-  { icon: '🛒', text: 'Cart abandonment up 4% — review checkout flow', sentiment: 'negative' },
+  { text: 'Mobile usage growing 12% week-over-week', positive: true },
+  { text: 'Desktop sessions declining — consider mobile-first UX improvements', positive: false },
+  { text: 'Peak activity on Tuesday and Thursday afternoons', positive: true },
+  { text: 'Cart abandonment up 4% — review checkout flow', positive: false },
 ]
 
 export default function TrendsPage() {
   return (
-    <PageShell title="AI Trend Prediction" subtitle="Identify emerging patterns and behavioral trends in your business data.">
-      <div style={{ background: '#fff', borderRadius: 14, padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ marginBottom: '1.25rem', fontWeight: 700 }}>Device Usage Trends</h3>
-        <ResponsiveContainer width="100%" height={280}>
+    <PageShell title="AI Trend Prediction" subtitle="Emerging patterns and behavioral trends in your data.">
+      <div style={C.card}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Device Usage Trends</h3>
+        <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={trends}>
             <defs>
-              {['#6c63ff','#10b981','#f59e0b'].map((c, i) => (
-                <linearGradient key={i} id={`g${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={c} stopOpacity={0.3} />
+              {[['#4f46e5', 'g0'], ['#818cf8', 'g1'], ['#c7d2fe', 'g2']].map(([c, id]) => (
+                <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={c} stopOpacity={0.15} />
                   <stop offset="95%" stopColor={c} stopOpacity={0} />
                 </linearGradient>
               ))}
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Area type="monotone" dataKey="mobile" stroke="#6c63ff" fill="url(#g0)" strokeWidth={2} name="Mobile" />
-            <Area type="monotone" dataKey="desktop" stroke="#10b981" fill="url(#g1)" strokeWidth={2} name="Desktop" />
-            <Area type="monotone" dataKey="tablet" stroke="#f59e0b" fill="url(#g2)" strokeWidth={2} name="Tablet" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <Tooltip {...ttip} />
+            <Legend iconType="circle" iconSize={8} />
+            <Area type="monotone" dataKey="mobile" stroke="#4f46e5" fill="url(#g0)" strokeWidth={2} name="Mobile" />
+            <Area type="monotone" dataKey="desktop" stroke="#818cf8" fill="url(#g1)" strokeWidth={2} name="Desktop" />
+            <Area type="monotone" dataKey="tablet" stroke="#c7d2fe" fill="url(#g2)" strokeWidth={2} name="Tablet" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div>
-        <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>🤖 AI-Detected Insights</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '0.75rem' }}>
+
+      <div style={C.card}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1rem' }}>AI-Detected Insights</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {insights.map(i => (
-            <div key={i.text} style={{ background: '#fff', borderRadius: 12, padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: `4px solid ${i.sentiment === 'positive' ? '#10b981' : i.sentiment === 'warning' ? '#f59e0b' : '#ef4444'}` }}>
-              <span style={{ fontSize: '1.4rem' }}>{i.icon}</span>
-              <span style={{ fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>{i.text}</span>
+            <div key={i.text} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 8, borderLeft: `3px solid ${i.positive ? '#4f46e5' : '#94a3b8'}` }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: i.positive ? '#4f46e5' : '#94a3b8', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.855rem', color: '#374151', lineHeight: 1.5 }}>{i.text}</span>
             </div>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import StatCard from '@/components/ui/StatCard'
+import { DollarSign, TrendingUp, Users, ShoppingCart } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -27,7 +28,7 @@ const salesByRegion = [
   { name: 'West', value: 15 },
 ]
 
-const COLORS = ['#6c63ff', '#10b981', '#f59e0b', '#ef4444']
+const CHART_COLORS = ['#4f46e5', '#818cf8', '#6366f1', '#a5b4fc']
 
 const topProducts = [
   { product: 'Product A', sales: 4200 },
@@ -43,68 +44,73 @@ export default function DashboardPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Dashboard</h1>
-          <p className={styles.subtitle}>Welcome back! Here's your business overview.</p>
+          <p className={styles.subtitle}>Business performance overview</p>
         </div>
-        <div className={styles.dateRange}>
-          <span>📅 Last 12 months</span>
-        </div>
+        <div className={styles.dateChip}>Last 12 months</div>
       </div>
 
       <div className={styles.statsGrid}>
-        <StatCard label="Total Revenue" value="$94,200" trend="12% vs last month" trendUp icon="💰" color="#6c63ff" />
-        <StatCard label="Total Sales" value="3,842" trend="8% vs last month" trendUp icon="📈" color="#10b981" />
-        <StatCard label="Total Customers" value="12,491" trend="5% vs last month" trendUp icon="👥" color="#f59e0b" />
-        <StatCard label="Total Orders" value="1,203" trend="3% vs last month" trendUp icon="📦" color="#3b82f6" />
+        <StatCard label="Total Revenue" value="$94,200" trend="12% vs last month" trendUp icon={<DollarSign size={20} strokeWidth={1.8} />} />
+        <StatCard label="Total Sales" value="3,842" trend="8% vs last month" trendUp icon={<TrendingUp size={20} strokeWidth={1.8} />} />
+        <StatCard label="Total Customers" value="12,491" trend="5% vs last month" trendUp icon={<Users size={20} strokeWidth={1.8} />} />
+        <StatCard label="Total Orders" value="1,203" trend="3% vs last month" trendUp icon={<ShoppingCart size={20} strokeWidth={1.8} />} />
       </div>
 
       <div className={styles.chartsRow}>
         <div className={styles.chartCard}>
-          <h3>Revenue vs Expenses</h3>
-          <ResponsiveContainer width="100%" height={260}>
+          <div className={styles.cardHeader}>
+            <h3>Revenue vs Expenses</h3>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6c63ff" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6c63ff" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="exp" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
-              <Legend />
-              <Area type="monotone" dataKey="revenue" stroke="#6c63ff" fill="url(#rev)" strokeWidth={2} />
-              <Area type="monotone" dataKey="expenses" stroke="#ef4444" fill="url(#exp)" strokeWidth={2} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+              <Legend iconType="circle" iconSize={8} />
+              <Area type="monotone" dataKey="revenue" stroke="#4f46e5" fill="url(#rev)" strokeWidth={2} name="Revenue" />
+              <Area type="monotone" dataKey="expenses" stroke="#f43f5e" fill="url(#exp)" strokeWidth={2} name="Expenses" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
         <div className={styles.chartCard}>
-          <h3>Sales by Region</h3>
-          <ResponsiveContainer width="100%" height={260}>
+          <div className={styles.cardHeader}>
+            <h3>Sales by Region</h3>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
             <PieChart>
-              <Pie data={salesByRegion} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}%`}>
-                {salesByRegion.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Pie data={salesByRegion} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={3}>
+                {salesByRegion.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0' }} />
+              <Legend iconType="circle" iconSize={8} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       <div className={styles.chartCard}>
-        <h3>Top Products by Sales</h3>
-        <ResponsiveContainer width="100%" height={220}>
+        <div className={styles.cardHeader}>
+          <h3>Top Products by Sales</h3>
+        </div>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={topProducts} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis type="number" tick={{ fontSize: 11 }} />
-            <YAxis dataKey="product" type="category" tick={{ fontSize: 11 }} width={80} />
-            <Tooltip />
-            <Bar dataKey="sales" fill="#6c63ff" radius={[0, 6, 6, 0]} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+            <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <YAxis dataKey="product" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={80} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0' }} />
+            <Bar dataKey="sales" fill="#4f46e5" radius={[0, 6, 6, 0]} maxBarSize={24} />
           </BarChart>
         </ResponsiveContainer>
       </div>

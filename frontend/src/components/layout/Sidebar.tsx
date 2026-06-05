@@ -1,36 +1,37 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, TrendingUp, Users, DollarSign, Package,
+  LayoutDashboard, BarChart2, Users, DollarSign, Package,
   Brain, FileText, Bell, Settings, User, Shield, LogOut,
-  ChevronRight, BarChart2
+  ChevronDown, TrendingUp, Zap
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import styles from './Sidebar.module.css'
+import { useState } from 'react'
 
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
   {
     label: 'Analytics', icon: BarChart2, children: [
-      { label: 'Sales', to: '/analytics/sales' },
-      { label: 'Customers', to: '/analytics/customers' },
-      { label: 'Finance', to: '/analytics/finance' },
-      { label: 'Inventory', to: '/analytics/inventory' },
+      { label: 'Sales', to: '/analytics/sales', icon: TrendingUp },
+      { label: 'Customers', to: '/analytics/customers', icon: Users },
+      { label: 'Finance', to: '/analytics/finance', icon: DollarSign },
+      { label: 'Inventory', to: '/analytics/inventory', icon: Package },
     ]
   },
   {
     label: 'AI Features', icon: Brain, children: [
-      { label: 'Forecasting', to: '/ai/forecasting' },
-      { label: 'Trends', to: '/ai/trends' },
-      { label: 'Recommendations', to: '/ai/recommendations' },
+      { label: 'Forecasting', to: '/ai/forecasting', icon: TrendingUp },
+      { label: 'Trends', to: '/ai/trends', icon: BarChart2 },
+      { label: 'Recommendations', to: '/ai/recommendations', icon: Zap },
     ]
   },
   { label: 'Reports', icon: FileText, to: '/reports' },
   { label: 'Notifications', icon: Bell, to: '/notifications' },
   {
     label: 'Admin', icon: Shield, children: [
-      { label: 'Users', to: '/admin/users' },
-      { label: 'Audit Logs', to: '/admin/audit-logs' },
-      { label: 'System Monitor', to: '/admin/system-monitor' },
+      { label: 'Users', to: '/admin/users', icon: Users },
+      { label: 'Audit Logs', to: '/admin/audit-logs', icon: FileText },
+      { label: 'System Monitor', to: '/admin/system-monitor', icon: Settings },
     ]
   },
   { label: 'Profile', icon: User, to: '/profile' },
@@ -45,12 +46,12 @@ export default function Sidebar({ open }: Props) {
   return (
     <aside className={`${styles.sidebar} ${open ? styles.open : styles.closed}`}>
       <div className={styles.brand}>
-        <span className={styles.brandIcon}>⚡</span>
+        <div className={styles.brandMark}>B</div>
         {open && <span className={styles.brandName}>BizAnalytics</span>}
       </div>
 
       <nav className={styles.nav}>
-        {nav.map(item => (
+        {nav.map(item =>
           item.children ? (
             <NavGroup key={item.label} item={item} open={open} />
           ) : (
@@ -59,26 +60,26 @@ export default function Sidebar({ open }: Props) {
               to={item.to!}
               className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ''}`}
             >
-              <item.icon size={18} />
+              <item.icon size={17} strokeWidth={1.8} />
               {open && <span>{item.label}</span>}
             </NavLink>
           )
-        ))}
+        )}
       </nav>
 
       <div className={styles.footer}>
         {open && (
           <div className={styles.userInfo}>
-            <div className={styles.avatar}>{profile?.name?.[0] ?? user?.email?.[0]?.toUpperCase() ?? 'U'}</div>
-            <div>
-              <div className={styles.userName}>{profile?.name ?? user?.email ?? 'User'}</div>
+            <div className={styles.avatar}>{profile?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}</div>
+            <div className={styles.userDetails}>
+              <div className={styles.userName}>{profile?.name ?? user?.email?.split('@')[0] ?? 'User'}</div>
               <div className={styles.userRole}>{profile?.role ?? 'USER'}</div>
             </div>
           </div>
         )}
         <button className={styles.logoutBtn} onClick={logout} title="Logout">
-          <LogOut size={18} />
-          {open && <span>Logout</span>}
+          <LogOut size={16} strokeWidth={1.8} />
+          {open && <span>Sign out</span>}
         </button>
       </div>
     </aside>
@@ -86,19 +87,25 @@ export default function Sidebar({ open }: Props) {
 }
 
 function NavGroup({ item, open }: { item: typeof nav[0]; open: boolean }) {
+  const [expanded, setExpanded] = useState(true)
   return (
     <div className={styles.group}>
-      <div className={styles.groupLabel}>
-        {item.icon && <item.icon size={18} />}
-        {open && <span>{item.label}</span>}
-        {open && <ChevronRight size={14} className={styles.chevron} />}
-      </div>
-      {open && item.children?.map(child => (
+      <button className={styles.groupLabel} onClick={() => open && setExpanded(e => !e)}>
+        <item.icon size={17} strokeWidth={1.8} />
+        {open && (
+          <>
+            <span>{item.label}</span>
+            <ChevronDown size={13} className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`} />
+          </>
+        )}
+      </button>
+      {open && expanded && item.children?.map(child => (
         <NavLink
           key={child.to}
           to={child.to}
           className={({ isActive }) => `${styles.link} ${styles.subLink} ${isActive ? styles.active : ''}`}
         >
+          <child.icon size={15} strokeWidth={1.8} />
           <span>{child.label}</span>
         </NavLink>
       ))}

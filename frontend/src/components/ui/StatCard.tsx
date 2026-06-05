@@ -1,26 +1,25 @@
 import styles from './StatCard.module.css'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 interface Props {
   label: string
   value: string
   trend?: string
   trendUp?: boolean
-  icon: string
-  color?: string
+  icon: React.ReactNode
 }
 
-export default function StatCard({ label, value, trend, trendUp, icon, color = '#6c63ff' }: Props) {
+export default function StatCard({ label, value, trend, trendUp, icon }: Props) {
   return (
     <div className={styles.card}>
-      <div className={styles.iconWrap} style={{ background: `${color}18` }}>
-        <span style={{ fontSize: '1.4rem' }}>{icon}</span>
-      </div>
+      <div className={styles.iconWrap}>{icon}</div>
       <div className={styles.body}>
         <div className={styles.label}>{label}</div>
         <div className={styles.value}>{value}</div>
         {trend && (
           <div className={`${styles.trend} ${trendUp ? styles.up : styles.down}`}>
-            {trendUp ? '↑' : '↓'} {trend}
+            {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            <span>{trend}</span>
           </div>
         )}
       </div>

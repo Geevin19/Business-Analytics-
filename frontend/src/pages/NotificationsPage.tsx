@@ -1,28 +1,34 @@
 import PageShell from '@/components/ui/PageShell'
 
 const notifications = [
-  { icon: '🎯', title: 'Revenue Target Reached', desc: 'You\'ve hit 100% of your Q2 revenue target of $280,000!', time: '2m ago', type: 'success', unread: true },
-  { icon: '⚠️', title: 'Low Stock Alert', desc: 'Widget B is below reorder point (85 units remaining).', time: '1h ago', type: 'warning', unread: true },
-  { icon: '👤', title: 'New User Registered', desc: 'A new admin account has been created by john@example.com.', time: '3h ago', type: 'info', unread: false },
-  { icon: '📊', title: 'Weekly Report Ready', desc: 'Your weekly analytics report for Jun 1–7 is ready to download.', time: '5h ago', type: 'info', unread: false },
-  { icon: '🔔', title: 'Performance Alert', desc: 'Sales dropped 12% compared to last Tuesday. Review dashboard.', time: '1d ago', type: 'warning', unread: false },
+  { title: 'Revenue Target Reached', desc: 'You have hit 100% of your Q2 revenue target of $280,000.', time: '2m ago', type: 'success', unread: true },
+  { title: 'Low Stock Alert', desc: 'Widget B is below reorder point — 85 units remaining.', time: '1h ago', type: 'warning', unread: true },
+  { title: 'Weekly Report Ready', desc: 'Your weekly analytics report for Jun 1–7 is ready to download.', time: '5h ago', type: 'info', unread: false },
+  { title: 'Performance Alert', desc: 'Sales dropped 12% compared to last Tuesday. Review dashboard.', time: '1d ago', type: 'warning', unread: false },
 ]
 
-const typeColors: Record<string, string> = { success: '#10b981', warning: '#f59e0b', info: '#3b82f6' }
+const typeStyle: Record<string, { dot: string; border: string }> = {
+  success: { dot: '#4f46e5', border: '#4f46e5' },
+  warning: { dot: '#d97706', border: '#d97706' },
+  info: { dot: '#94a3b8', border: '#e8eaf0' },
+}
 
 export default function NotificationsPage() {
   return (
-    <PageShell title="Notifications" subtitle="Business alerts, performance updates & system notifications.">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+    <PageShell title="Notifications" subtitle="Business alerts and performance updates.">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxWidth: 720 }}>
         {notifications.map(n => (
-          <div key={n.title} style={{ background: '#fff', borderRadius: 12, padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: `4px solid ${typeColors[n.type]}`, opacity: n.unread ? 1 : 0.7 }}>
-            <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{n.icon}</span>
+          <div key={n.title} style={{ background: '#fff', borderRadius: 10, padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start', border: '1px solid #e8eaf0', borderLeft: `3px solid ${typeStyle[n.type].border}`, opacity: n.unread ? 1 : 0.65 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: typeStyle[n.type].dot, flexShrink: 0, marginTop: '0.35rem' }} />
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{n.title}{n.unread && <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', background: '#6c63ff', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: 4 }}>NEW</span>}</div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{n.time}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {n.title}
+                  {n.unread && <span style={{ fontSize: '0.65rem', background: '#4f46e5', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: 3, fontWeight: 700, letterSpacing: '0.03em' }}>NEW</span>}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', flexShrink: 0 }}>{n.time}</div>
               </div>
-              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>{n.desc}</div>
+              <div style={{ fontSize: '0.845rem', color: '#64748b', lineHeight: 1.5 }}>{n.desc}</div>
             </div>
           </div>
         ))}

@@ -5,14 +5,18 @@ interface Props {
   title: string
   subtitle?: string
   children: ReactNode
+  actions?: ReactNode
 }
 
-export default function PageShell({ title, subtitle, children }: Props) {
+export default function PageShell({ title, subtitle, children, actions }: Props) {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>{title}</h1>
-        {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+        <div>
+          <h1 className={styles.title}>{title}</h1>
+          {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+        </div>
+        {actions && <div>{actions}</div>}
       </div>
       {children}
     </div>
