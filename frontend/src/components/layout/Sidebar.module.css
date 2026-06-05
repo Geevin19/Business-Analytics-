@@ -1,0 +1,120 @@
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #1a1a2e;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s ease;
+  flex-shrink: 0;
+}
+
+.closed { width: 64px; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.brandIcon { font-size: 1.4rem; flex-shrink: 0; }
+.brandName { overflow: hidden; text-overflow: ellipsis; }
+
+.nav {
+  flex: 1;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.link:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.active { background: rgba(108,99,255,0.25) !important; color: #a5b4fc !important; }
+
+.subLink { padding-left: 2rem; font-size: 0.825rem; }
+
+.group { display: flex; flex-direction: column; }
+
+.groupLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.chevron { margin-left: auto; }
+
+.footer {
+  padding: 1rem 0.75rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow: hidden;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6c63ff, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.userName { font-size: 0.85rem; color: #e2e8f0; font-weight: 600; }
+.userRole { font-size: 0.75rem; color: #64748b; }
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.logoutBtn:hover { background: rgba(239,68,68,0.2); }

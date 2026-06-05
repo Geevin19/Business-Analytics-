@@ -1,0 +1,55 @@
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.title { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; }
+.subtitle { color: #64748b; font-size: 0.9rem; margin-top: 0.2rem; }
+
+.dateRange {
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.chartsRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+
+.chartCard {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+}
+
+.chartCard h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+  .chartsRow { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .statsGrid { grid-template-columns: 1fr; }
+}
