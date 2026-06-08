@@ -2,10 +2,10 @@ import PageShell from '@/components/ui/PageShell'
 import StatCard from '@/components/ui/StatCard'
 import { DollarSign, ArrowUpRight, TrendingUp, PieChart as PieIcon } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import s from '@/styles/shared.module.css'
 
-const C = { card: { background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', border: '1px solid #e8eaf0' } }
-const ttip = { contentStyle: { borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' } }
-const axis = { axisLine: false, tickLine: false }
+const axis = { axisLine: false as const, tickLine: false as const }
+const ttip = { contentStyle: { borderRadius: 8, fontSize: 12 } }
 
 const cashFlow = [
   { month: 'Jan', inflow: 52000, outflow: 38000 }, { month: 'Feb', inflow: 58000, outflow: 42000 },
@@ -23,29 +23,29 @@ export default function FinancePage() {
         <StatCard label="Total Revenue" value="$1.1M" trend="18% vs last year" trendUp icon={<DollarSign size={20} strokeWidth={1.8} />} />
         <StatCard label="Total Expenses" value="$573K" trend="8% increase" trendUp={false} icon={<ArrowUpRight size={20} strokeWidth={1.8} />} />
         <StatCard label="Net Profit" value="$527K" trend="22% vs last year" trendUp icon={<TrendingUp size={20} strokeWidth={1.8} />} />
-        <StatCard label="Budget Used" value="72%" trend="3% vs target" trendUp icon={<PieIcon size={20} strokeWidth={1.8} />} />
+        <StatCard label="Budget Used" value="72%" icon={<PieIcon size={20} strokeWidth={1.8} />} />
       </div>
 
-      <div style={C.card}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Cash Flow</h3>
+      <div className={s.card}>
+        <div className={s.cardTitle}>Cash Flow</div>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={cashFlow}>
             <defs>
               <linearGradient id="in" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                <stop offset="5%" stopColor="#166D16" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#166D16" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="out" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.12} />
                 <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
             <Tooltip {...ttip} formatter={(v: number) => `$${v.toLocaleString()}`} />
             <Legend iconType="circle" iconSize={8} />
-            <Area type="monotone" dataKey="inflow" stroke="#4f46e5" fill="url(#in)" strokeWidth={2} name="Inflow" />
+            <Area type="monotone" dataKey="inflow" stroke="#166D16" fill="url(#in)" strokeWidth={2} name="Inflow" />
             <Area type="monotone" dataKey="outflow" stroke="#f43f5e" fill="url(#out)" strokeWidth={2} name="Outflow" />
           </AreaChart>
         </ResponsiveContainer>

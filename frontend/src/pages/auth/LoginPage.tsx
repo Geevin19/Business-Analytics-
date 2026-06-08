@@ -1,11 +1,13 @@
 import { useState, FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import styles from './Auth.module.css'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const successMsg = (location.state as any)?.message
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -29,6 +31,7 @@ export default function LoginPage() {
     <div className={styles.form}>
       <h2 className={styles.title}>Welcome back</h2>
       <p className={styles.subtitle}>Sign in to your BizAnalytics account</p>
+      {successMsg && <div className={styles.success}>{successMsg}</div>}
       {error && <div className={styles.error}>{error}</div>}
       <form onSubmit={handleSubmit} className={styles.fields}>
         <div className={styles.field}>

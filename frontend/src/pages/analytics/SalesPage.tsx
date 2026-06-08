@@ -2,8 +2,7 @@ import PageShell from '@/components/ui/PageShell'
 import StatCard from '@/components/ui/StatCard'
 import { TrendingUp, Calendar, BarChart2, Award } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-
-const C = { card: { background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', border: '1px solid #e8eaf0' } }
+import s from '@/styles/shared.module.css'
 
 const monthly = [
   { month: 'Jan', sales: 3200 }, { month: 'Feb', sales: 4100 }, { month: 'Mar', sales: 3800 },
@@ -16,8 +15,8 @@ const daily = Array.from({ length: 30 }, (_, i) => ({
   day: `${i + 1}`, sales: Math.floor(Math.random() * 300 + 100)
 }))
 
-const ttip = { contentStyle: { borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' } }
-const axis = { axisLine: false, tickLine: false }
+const axis = { axisLine: false as const, tickLine: false as const }
+const ttip = { contentStyle: { borderRadius: 8, fontSize: 12 } }
 
 export default function SalesPage() {
   return (
@@ -29,28 +28,28 @@ export default function SalesPage() {
         <StatCard label="This Year" value="$1.1M" trend="18% vs last year" trendUp icon={<Award size={20} strokeWidth={1.8} />} />
       </div>
 
-      <div style={C.card}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Monthly Sales Trend</h3>
+      <div className={s.card}>
+        <div className={s.cardTitle}>Monthly Sales Trend</div>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={monthly}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
             <Tooltip {...ttip} />
-            <Bar dataKey="sales" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={36} />
+            <Bar dataKey="sales" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={36} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={C.card}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Daily Sales — Last 30 Days</h3>
+      <div className={s.card}>
+        <div className={s.cardTitle}>Daily Sales — Last 30 Days</div>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={daily}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} {...axis} />
-            <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} {...axis} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} {...axis} />
+            <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} {...axis} />
             <Tooltip {...ttip} />
-            <Line type="monotone" dataKey="sales" stroke="#4f46e5" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="sales" stroke="var(--primary)" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>

@@ -1,25 +1,25 @@
-.form { width: 100%; }
+.form { width: 100%; font-family: 'Inter', system-ui, sans-serif; }
 
 .title {
   font-size: 1.5rem;
-  font-weight: 800;
-  color: #1a1a2e;
-  margin-bottom: 0.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 0.3rem;
 }
 
 .subtitle {
-  color: #64748b;
-  font-size: 0.9rem;
+  color: rgba(241,245,249,0.45);
+  font-size: 0.875rem;
   margin-bottom: 1.75rem;
 }
 
 .error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.855rem;
   margin-bottom: 1rem;
 }
 
@@ -28,50 +28,105 @@
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .field label {
-  font-size: 0.875rem;
+  font-size: 0.835rem;
   font-weight: 600;
-  color: #374151;
+  color: rgba(241,245,249,0.75);
 }
 
 .field input {
-  padding: 0.7rem 1rem;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 0.72rem 1rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
   font-size: 0.9rem;
-  color: #1a1a2e;
-  transition: border-color 0.2s;
+  color: #f1f5f9;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+  font-family: inherit;
 }
 
-.field input:focus { border-color: #6c63ff; }
+.field input::placeholder { color: rgba(255,255,255,0.25); }
+.field input:focus { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.06); }
 
 .forgotRow {
   display: flex;
   justify-content: flex-end;
-  font-size: 0.85rem;
+  font-size: 0.845rem;
 }
 
-.forgotRow a { color: #6c63ff; }
+.forgotRow a { color: #1a8a1a; transition: color 0.15s; }
+.forgotRow a:hover { color: #6abf6a; }
 
 .submitBtn {
-  padding: 0.8rem;
-  background: linear-gradient(135deg, #6c63ff, #764ba2);
+  padding: 0.82rem;
+  background: linear-gradient(135deg,#166D16,#1d7a1d);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 600;
   margin-top: 0.5rem;
-  transition: opacity 0.2s;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  font-family: inherit;
+  width: 100%;
 }
 
-.submitBtn:hover { opacity: 0.9; }
-.submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.submitBtn:hover { opacity: 0.9; transform: translateY(-1px); }
+.submitBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .switchText {
   text-align: center;
   margin-top: 1.5rem;
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: 0.855rem;
+  color: rgba(241,245,249,0.45);
 }
 
-.switchText a { color: #6c63ff; font-weight: 600; }
+.switchText a { color: #1a8a1a; font-weight: 600; transition: color 0.15s; }
+.switchText a:hover { color: #6abf6a; }
+
+.select {
+  padding: 0.72rem 1rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  font-size: 0.9rem;
+  color: #f1f5f9;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.35)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.5rem;
+}
+
+.select:focus { border-color: rgba(99,102,241,0.6); background-color: rgba(99,102,241,0.06); }
+
+.select option { background: #1e2a45; color: #f1f5f9; }
+
+.inputError { border-color: rgba(239,68,68,0.5) !important; }
+
+.fieldError {
+  font-size: 0.775rem;
+  color: #fca5a5;
+  margin-top: 0.1rem;
+}
+
+.success {
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #86efac;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.855rem;
+  margin-bottom: 1rem;
+}
+
+.successIcon {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}

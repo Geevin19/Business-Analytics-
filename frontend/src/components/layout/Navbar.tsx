@@ -1,12 +1,11 @@
-import { Menu, Sun, Moon, Bell, Search } from 'lucide-react'
-import { useTheme } from '@/context/ThemeContext'
+import { Menu, Search } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import NotificationBell from './NotificationBell'
 import styles from './Navbar.module.css'
 
 interface Props { onMenuClick: () => void }
 
 export default function Navbar({ onMenuClick }: Props) {
-  const { theme, toggleTheme } = useTheme()
   const { user, profile } = useAuth()
 
   return (
@@ -21,13 +20,7 @@ export default function Navbar({ onMenuClick }: Props) {
         </div>
       </div>
       <div className={styles.right}>
-        <button className={styles.iconBtn} onClick={toggleTheme} title="Toggle theme">
-          {theme === 'light' ? <Moon size={17} strokeWidth={1.8} /> : <Sun size={17} strokeWidth={1.8} />}
-        </button>
-        <button className={styles.iconBtn} title="Notifications">
-          <Bell size={17} strokeWidth={1.8} />
-          <span className={styles.badge} />
-        </button>
+        <NotificationBell />
         <div className={styles.avatar} title={profile?.name ?? user?.email}>
           {profile?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
         </div>

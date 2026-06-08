@@ -1,0 +1,85 @@
+/* Shared card style used across all pages */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.cardTitle {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.855rem;
+}
+
+.tableHead {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.th {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  color: var(--text-faint);
+  font-weight: 600;
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.td { padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--border); color: var(--text-2); }
+
+.emptyRow { padding: 2.5rem; text-align: center; color: var(--text-faint); font-size: 0.855rem; }
+
+.primaryBtn {
+  padding: 0.55rem 1.1rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: opacity 0.15s;
+}
+
+.primaryBtn:hover { opacity: 0.88; }
+
+.outlineBtn {
+  padding: 0.55rem 1.1rem;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ghostBtn {
+  padding: 0.55rem 1.1rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}

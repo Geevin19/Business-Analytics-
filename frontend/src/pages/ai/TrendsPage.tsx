@@ -29,7 +29,7 @@ export default function TrendsPage() {
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={trends}>
             <defs>
-              {[['#4f46e5', 'g0'], ['#818cf8', 'g1'], ['#c7d2fe', 'g2']].map(([c, id]) => (
+              {[['#166D16', 'g0'], ['#1a8a1a', 'g1'], ['#a3d4a3', 'g2']].map(([c, id]) => (
                 <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={c} stopOpacity={0.15} />
                   <stop offset="95%" stopColor={c} stopOpacity={0} />
@@ -41,9 +41,9 @@ export default function TrendsPage() {
             <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
             <Tooltip {...ttip} />
             <Legend iconType="circle" iconSize={8} />
-            <Area type="monotone" dataKey="mobile" stroke="#4f46e5" fill="url(#g0)" strokeWidth={2} name="Mobile" />
-            <Area type="monotone" dataKey="desktop" stroke="#818cf8" fill="url(#g1)" strokeWidth={2} name="Desktop" />
-            <Area type="monotone" dataKey="tablet" stroke="#c7d2fe" fill="url(#g2)" strokeWidth={2} name="Tablet" />
+            <Area type="monotone" dataKey="mobile" stroke="#166D16" fill="url(#g0)" strokeWidth={2} name="Mobile" />
+            <Area type="monotone" dataKey="desktop" stroke="#1a8a1a" fill="url(#g1)" strokeWidth={2} name="Desktop" />
+            <Area type="monotone" dataKey="tablet" stroke="#a3d4a3" fill="url(#g2)" strokeWidth={2} name="Tablet" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -52,8 +52,8 @@ export default function TrendsPage() {
         <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1rem' }}>AI-Detected Insights</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {insights.map(i => (
-            <div key={i.text} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 8, borderLeft: `3px solid ${i.positive ? '#4f46e5' : '#94a3b8'}` }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: i.positive ? '#4f46e5' : '#94a3b8', flexShrink: 0 }} />
+            <div key={i.text} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 8, borderLeft: `3px solid ${i.positive ? '#166D16' : '#94a3b8'}` }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: i.positive ? '#166D16' : '#94a3b8', flexShrink: 0 }} />
               <span style={{ fontSize: '0.855rem', color: '#374151', lineHeight: 1.5 }}>{i.text}</span>
             </div>
           ))}

@@ -28,7 +28,7 @@ export default function RecommendationsPage() {
               </span>
             </div>
             <p style={{ fontSize: '0.845rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>{r.desc}</p>
-            <button style={{ marginTop: '1rem', padding: '0.4rem 0.875rem', background: 'transparent', border: '1px solid #e8eaf0', color: '#4f46e5', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+            <button style={{ marginTop: '1rem', padding: '0.4rem 0.875rem', background: 'transparent', border: '1px solid #e8eaf0', color: '#166D16', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
               Take Action
             </button>
           </div>

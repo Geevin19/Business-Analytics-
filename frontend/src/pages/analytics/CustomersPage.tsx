@@ -2,10 +2,10 @@ import PageShell from '@/components/ui/PageShell'
 import StatCard from '@/components/ui/StatCard'
 import { Users, UserPlus, RefreshCw, UserMinus } from 'lucide-react'
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import s from '@/styles/shared.module.css'
 
-const C = { card: { background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', border: '1px solid #e8eaf0' } }
-const ttip = { contentStyle: { borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' } }
-const axis = { axisLine: false, tickLine: false }
+const axis = { axisLine: false as const, tickLine: false as const }
+const ttip = { contentStyle: { borderRadius: 8, fontSize: 12 } }
 
 const growth = [
   { month: 'Jan', customers: 8200 }, { month: 'Feb', customers: 8800 }, { month: 'Mar', customers: 9400 },
@@ -19,7 +19,7 @@ const segments = [
   { name: 'New', value: 20 }, { name: 'Churned', value: 10 },
 ]
 
-const COLORS = ['#4f46e5', '#818cf8', '#6366f1', '#a5b4fc']
+const COLORS = ['#166D16', '#1a8a1a', '#166D16', '#6abf6a']
 
 export default function CustomersPage() {
   return (
@@ -32,21 +32,21 @@ export default function CustomersPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-        <div style={C.card}>
-          <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Customer Growth</h3>
+        <div className={s.card}>
+          <div className={s.cardTitle}>Customer Growth</div>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={growth}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
               <Tooltip {...ttip} />
-              <Line type="monotone" dataKey="customers" stroke="#4f46e5" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="customers" stroke="var(--primary)" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div style={C.card}>
-          <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Segmentation</h3>
+        <div className={s.card}>
+          <div className={s.cardTitle}>Segmentation</div>
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
               <Pie data={segments} cx="50%" cy="45%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={3}>

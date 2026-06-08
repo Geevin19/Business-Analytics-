@@ -2,10 +2,10 @@ import PageShell from '@/components/ui/PageShell'
 import StatCard from '@/components/ui/StatCard'
 import { Package, AlertTriangle, RefreshCw, XCircle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import s from '@/styles/shared.module.css'
 
-const C = { card: { background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', border: '1px solid #e8eaf0' } }
-const ttip = { contentStyle: { borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' } }
-const axis = { axisLine: false, tickLine: false }
+const axis = { axisLine: false as const, tickLine: false as const }
+const ttip = { contentStyle: { borderRadius: 8, fontSize: 12 } }
 
 const stock = [
   { product: 'Widget A', stock: 420, reorder: 100 }, { product: 'Widget B', stock: 85, reorder: 100 },
@@ -26,28 +26,28 @@ export default function InventoryPage() {
       </div>
 
       {lowStock.length > 0 && (
-        <div style={{ background: '#fafafa', border: '1px solid #e8eaf0', borderLeft: '3px solid #f59e0b', borderRadius: 10, padding: '1rem 1.25rem' }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#92400e', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Low Stock Alert</div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '3px solid #d97706', borderRadius: 10, padding: '1rem 1.25rem' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#d97706', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Low Stock Alert</div>
           {lowStock.map(p => (
-            <div key={p.product} style={{ fontSize: '0.855rem', color: '#64748b', padding: '0.2rem 0', display: 'flex', gap: '0.5rem' }}>
-              <span style={{ color: '#0f172a', fontWeight: 500 }}>{p.product}</span>
-              <span>— {p.stock} units remaining (reorder at {p.reorder})</span>
+            <div key={p.product} style={{ fontSize: '0.855rem', color: 'var(--text-muted)', padding: '0.2rem 0' }}>
+              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{p.product}</span>
+              {' '}— {p.stock} units remaining (reorder at {p.reorder})
             </div>
           ))}
         </div>
       )}
 
-      <div style={C.card}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Stock Levels by Product</h3>
+      <div className={s.card}>
+        <div className={s.cardTitle}>Stock Levels by Product</div>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={stock}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="product" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="product" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
             <Tooltip {...ttip} />
             <Legend iconType="circle" iconSize={8} />
-            <Bar dataKey="stock" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={32} name="Current Stock" />
-            <Bar dataKey="reorder" fill="#c7d2fe" radius={[4, 4, 0, 0]} maxBarSize={32} name="Reorder Point" />
+            <Bar dataKey="stock" fill="#166D16" radius={[4, 4, 0, 0]} maxBarSize={32} name="Current Stock" />
+            <Bar dataKey="reorder" fill="#a3d4a3" radius={[4, 4, 0, 0]} maxBarSize={32} name="Reorder Point" />
           </BarChart>
         </ResponsiveContainer>
       </div>

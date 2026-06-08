@@ -1,30 +1,91 @@
 .wrapper {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
+  background: #0b1220;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(11,18,32,0.35) 0%, rgba(11,18,32,0.72) 100%);
+}
+
+.glow1 {
+  position: fixed;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: rgba(99,102,241,0.07);
+  top: -180px; left: -180px;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glow2 {
+  position: fixed;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: rgba(139,92,246,0.06);
+  bottom: -120px; right: -120px;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.inner {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 460px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 2rem;
-  color: #fff;
-  font-size: 1.4rem;
-  font-weight: 700;
+  margin-bottom: 1.75rem;
+  text-decoration: none;
 }
 
-.logo { font-size: 1.8rem; }
+.brandIcon {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #166D16, #1d7a1d);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+
+.brandName {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+  font-family: 'Inter', system-ui, sans-serif;
+}
 
 .card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 2.5rem;
   width: 100%;
-  max-width: 440px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 18px;
+  padding: 2.25rem 2rem;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
 }

@@ -1,31 +1,31 @@
 .card {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
   padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  border: 1px solid #e8eaf0;
-  transition: box-shadow 0.2s;
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s, background 0.2s;
 }
 
-.card:hover { box-shadow: 0 4px 16px rgba(79,70,229,0.08); }
+.card:hover { box-shadow: var(--shadow); }
 
 .iconWrap {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #f0f0ff;
+  background: var(--primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4f46e5;
+  color: var(--primary);
   flex-shrink: 0;
 }
 
 .body { display: flex; flex-direction: column; gap: 0.1rem; }
-.label { font-size: 0.78rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
-.value { font-size: 1.5rem; font-weight: 700; color: #0f172a; line-height: 1.2; }
+.label { font-size: 0.78rem; color: var(--text-faint); font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+.value { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1.2; }
 .trend { font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 3px; margin-top: 0.1rem; }
 .up { color: #16a34a; }
 .down { color: #dc2626; }

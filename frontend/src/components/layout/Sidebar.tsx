@@ -27,13 +27,7 @@ const nav = [
   },
   { label: 'Reports', icon: FileText, to: '/reports' },
   { label: 'Notifications', icon: Bell, to: '/notifications' },
-  {
-    label: 'Admin', icon: Shield, children: [
-      { label: 'Users', to: '/admin/users', icon: Users },
-      { label: 'Audit Logs', to: '/admin/audit-logs', icon: FileText },
-      { label: 'System Monitor', to: '/admin/system-monitor', icon: Settings },
-    ]
-  },
+  { label: 'Admin Panel', icon: Shield, to: '/admin/dashboard' },
   { label: 'Profile', icon: User, to: '/profile' },
   { label: 'Settings', icon: Settings, to: '/settings' },
 ]

@@ -1,79 +1,92 @@
-import PageShell from '@/components/ui/PageShell'
-import { useEffect, useState } from 'react'
-import api from '@/services/api'
+import { useState } from 'react'
+import AdminPageShell from '@/components/admin/AdminPageShell'
+import DataTable from '@/components/admin/DataTable'
+import { useToast } from '@/components/admin/useToast'
+import { mockUsers, AdminUser } from '@/data/adminMockData'
 import { UserPlus } from 'lucide-react'
+import s from '@/components/admin/admin.module.css'
 
-interface UserRow {
-  id: string
-  name: string
-  email: string
-  role: string
-  created_at: string
-}
-
-const roleStyle: Record<string, { bg: string; color: string }> = {
-  ADMIN: { bg: '#f0f0ff', color: '#4f46e5' },
-  MANAGER: { bg: '#f0fdf4', color: '#16a34a' },
-  USER: { bg: '#f8fafc', color: '#64748b' },
+function statusBadge(status: string) {
+  return <span className={`${s.badge} ${status === 'Active' ? s.badgeSuccess : s.badgeMuted}`}>{status}</span>
 }
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<UserRow[]>([])
-  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState(mockUsers)
+  const [modal, setModal] = useState<'add' | 'edit' | null>(null)
+  const [editing, setEditing] = useState<AdminUser | null>(null)
+  const { show, Toast } = useToast()
 
-  useEffect(() => {
-    api.get<UserRow[]>('/admin/users')
-      .then(r => setUsers(r.data))
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false))
-  }, [])
+  const columns = [
+    { key: 'id', header: 'User ID' },
+    { key: 'name', header: 'Full Name' },
+    { key: 'email', header: 'Email' },
+    { key: 'phone', header: 'Phone' },
+    { key: 'role', header: 'Role' },
+    { key: 'status', header: 'Status', render: (r: AdminUser) => statusBadge(r.status) },
+    { key: 'lastLogin', header: 'Last Login' },
+  ]
+
+  const toggleStatus = (user: AdminUser) => {
+    setUsers(prev => prev.map(u =>
+      u.id === user.id ? { ...u, status: u.status === 'Active' ? 'Inactive' as const : 'Active' as const } : u
+    ))
+    show(`User ${user.name} ${user.status === 'Active' ? 'deactivated' : 'activated'}`)
+  }
 
   return (
-    <PageShell
+    <AdminPageShell
       title="User Management"
-      subtitle="Manage accounts, roles and access control."
+      subtitle="View, add, edit, and manage user accounts and roles"
       actions={
-        <button style={{ padding: '0.55rem 1.1rem', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 600, fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <UserPlus size={15} strokeWidth={1.8} /> Invite User
+        <button className={s.btnPrimary} onClick={() => { setEditing(null); setModal('add') }}>
+          <UserPlus size={15} /> Add User
         </button>
       }
     >
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8eaf0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.855rem' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e8eaf0' }}>
-              {['Name', 'Email', 'Role', 'Joined', ''].map(h => (
-                <th key={h} style={{ padding: '0.75rem 1.25rem', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '0.775rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.855rem' }}>Loading...</td></tr>
-            )}
-            {!loading && users.length === 0 && (
-              <tr><td colSpan={5} style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.855rem' }}>No users found.</td></tr>
-            )}
-            {users.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.875rem 1.25rem', fontWeight: 600, color: '#0f172a' }}>{u.name}</td>
-                <td style={{ padding: '0.875rem 1.25rem', color: '#64748b' }}>{u.email}</td>
-                <td style={{ padding: '0.875rem 1.25rem' }}>
-                  <span style={{ padding: '0.18rem 0.55rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700, background: roleStyle[u.role]?.bg ?? '#f8fafc', color: roleStyle[u.role]?.color ?? '#64748b' }}>
-                    {u.role}
-                  </span>
-                </td>
-                <td style={{ padding: '0.875rem 1.25rem', color: '#94a3b8' }}>{new Date(u.created_at).toLocaleDateString()}</td>
-                <td style={{ padding: '0.875rem 1.25rem' }}>
-                  <button style={{ padding: '0.3rem 0.7rem', border: '1px solid #e8eaf0', borderRadius: 6, fontSize: '0.78rem', background: 'transparent', color: '#4f46e5', fontWeight: 600, cursor: 'pointer' }}>
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </PageShell>
+      <DataTable
+        columns={columns}
+        data={users}
+        searchKeys={['name', 'email', 'role', 'id']}
+        searchPlaceholder="Search users..."
+        filters={[
+          { key: 'role', label: 'All Roles', options: ['Super Admin', 'Admin', 'Manager', 'Analyst'] },
+          { key: 'status', label: 'All Status', options: ['Active', 'Inactive'] },
+        ]}
+        actions={(row: AdminUser) => (
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button className={s.btnIcon} onClick={() => { setEditing(row); setModal('edit') }}>Edit</button>
+            <button className={s.btnIcon} onClick={() => toggleStatus(row)}>
+              {row.status === 'Active' ? 'Deactivate' : 'Activate'}
+            </button>
+            <button className={s.btnIcon} onClick={() => show(`Password reset sent to ${row.email}`)}>Reset PW</button>
+            <button className={s.btnDanger} onClick={() => { setUsers(u => u.filter(x => x.id !== row.id)); show('User deleted') }}>Delete</button>
+          </div>
+        )}
+      />
+
+      {modal && (
+        <div className={s.modalOverlay} onClick={() => setModal(null)}>
+          <div className={s.modal} onClick={e => e.stopPropagation()}>
+            <h3 className={s.modalTitle}>{modal === 'add' ? 'Add New User' : 'Edit User'}</h3>
+            <div className={s.formGrid}>
+              <div className={s.formGroup}><label className={s.formLabel}>Full Name</label><input className={s.formInput} defaultValue={editing?.name} /></div>
+              <div className={s.formGroup}><label className={s.formLabel}>Email</label><input className={s.formInput} type="email" defaultValue={editing?.email} /></div>
+              <div className={s.formGroup}><label className={s.formLabel}>Phone</label><input className={s.formInput} defaultValue={editing?.phone} /></div>
+              <div className={s.formGroup}>
+                <label className={s.formLabel}>Role</label>
+                <select className={s.formInput} defaultValue={editing?.role ?? 'Analyst'}>
+                  {['Super Admin', 'Admin', 'Manager', 'Analyst'].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className={s.modalActions}>
+              <button className={s.btnSecondary} onClick={() => setModal(null)}>Cancel</button>
+              <button className={s.btnPrimary} onClick={() => { setModal(null); show(modal === 'add' ? 'User created' : 'User updated') }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {Toast}
+    </AdminPageShell>
   )
 }
