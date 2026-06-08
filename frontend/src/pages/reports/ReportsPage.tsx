@@ -9,7 +9,7 @@ const reports = [
   { name: 'AI Forecast Report', date: 'Apr 2026', size: '1.2 MB', type: 'PDF' },
 ]
 
-const btn = { padding: '0.55rem 1.1rem', background: '#166D16', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 600, fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }
+const btn = { padding: '0.55rem 1.1rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 600, fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }
 
 export default function ReportsPage() {
   return (
@@ -19,7 +19,7 @@ export default function ReportsPage() {
       actions={
         <div style={{ display: 'flex', gap: '0.6rem' }}>
           <button style={btn}><FilePlus size={15} strokeWidth={1.8} /> Generate PDF</button>
-          <button style={{ ...btn, background: '#fff', color: '#166D16', border: '1px solid #e8eaf0' }}><FilePlus size={15} strokeWidth={1.8} /> Generate Excel</button>
+          <button style={{ ...btn, background: '#fff', color: '#16a34a', border: '1px solid #e8eaf0' }}><FilePlus size={15} strokeWidth={1.8} /> Generate Excel</button>
           <button style={{ ...btn, background: '#fff', color: '#64748b', border: '1px solid #e8eaf0' }}><Clock size={15} strokeWidth={1.8} /> Schedule</button>
         </div>
       }
@@ -39,11 +39,11 @@ export default function ReportsPage() {
                 <td style={{ padding: '0.875rem 1.25rem', fontWeight: 500, color: '#0f172a' }}>{r.name}</td>
                 <td style={{ padding: '0.875rem 1.25rem', color: '#64748b' }}>{r.date}</td>
                 <td style={{ padding: '0.875rem 1.25rem' }}>
-                  <span style={{ padding: '0.18rem 0.5rem', background: '#e8f5e8', color: '#166D16', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600 }}>{r.type}</span>
+                  <span style={{ padding: '0.18rem 0.5rem', background: '#e8f5e8', color: '#16a34a', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600 }}>{r.type}</span>
                 </td>
                 <td style={{ padding: '0.875rem 1.25rem', color: '#94a3b8' }}>{r.size}</td>
                 <td style={{ padding: '0.875rem 1.25rem' }}>
-                  <button style={{ padding: '0.35rem 0.75rem', background: 'transparent', border: '1px solid #e8eaf0', borderRadius: 6, fontSize: '0.78rem', color: '#166D16', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <button style={{ padding: '0.35rem 0.75rem', background: 'transparent', border: '1px solid #e8eaf0', borderRadius: 6, fontSize: '0.78rem', color: '#16a34a', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                     <Download size={13} strokeWidth={2} /> Download
                   </button>
                 </td>

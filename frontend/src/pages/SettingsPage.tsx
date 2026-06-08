@@ -1,8 +1,8 @@
 import PageShell from '@/components/ui/PageShell'
 
 const settings = [
-  { label: 'Email Notifications', desc: 'Receive business performance alerts by email', action: <input type="checkbox" defaultChecked style={{ width: 18, height: 18, accentColor: '#166D16' }} /> },
-  { label: 'Push Notifications', desc: 'Browser push notifications for real-time alerts', action: <input type="checkbox" defaultChecked style={{ width: 18, height: 18, accentColor: '#166D16' }} /> },
+  { label: 'Email Notifications', desc: 'Receive business performance alerts by email', action: <input type="checkbox" defaultChecked style={{ width: 18, height: 18, accentColor: '#16a34a' }} /> },
+  { label: 'Push Notifications', desc: 'Browser push notifications for real-time alerts', action: <input type="checkbox" defaultChecked style={{ width: 18, height: 18, accentColor: '#16a34a' }} /> },
   {
     label: 'Data Export Format', desc: 'Default format for generated reports',
     action: (

@@ -28,7 +28,7 @@ const salesByRegion = [
   { name: 'West', value: 15 },
 ]
 
-const CHART_COLORS = ['#166D16', '#1a8a1a', '#166D16', '#6abf6a']
+const CHART_COLORS = ['#16a34a', '#22c55e', '#10b981', '#15803d']
 
 const topProducts = [
   { product: 'Product A', sales: 4200 },
@@ -65,8 +65,8 @@ export default function DashboardPage() {
             <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#166D16" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#166D16" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="exp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.12} />
@@ -78,7 +78,7 @@ export default function DashboardPage() {
               <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
               <Legend iconType="circle" iconSize={8} />
-              <Area type="monotone" dataKey="revenue" stroke="#166D16" fill="url(#rev)" strokeWidth={2} name="Revenue" />
+              <Area type="monotone" dataKey="revenue" stroke="#16a34a" fill="url(#rev)" strokeWidth={2} name="Revenue" />
               <Area type="monotone" dataKey="expenses" stroke="#f43f5e" fill="url(#exp)" strokeWidth={2} name="Expenses" />
             </AreaChart>
           </ResponsiveContainer>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
             <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
             <YAxis dataKey="product" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={80} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0' }} />
-            <Bar dataKey="sales" fill="#166D16" radius={[0, 6, 6, 0]} maxBarSize={24} />
+            <Bar dataKey="sales" fill="#16a34a" radius={[0, 6, 6, 0]} maxBarSize={24} />
           </BarChart>
         </ResponsiveContainer>
       </div>

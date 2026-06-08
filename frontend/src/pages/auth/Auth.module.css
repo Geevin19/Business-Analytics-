@@ -3,20 +3,20 @@
 .title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #111827;
   margin-bottom: 0.3rem;
 }
 
 .subtitle {
-  color: rgba(241,245,249,0.45);
+  color: rgba(17,24,39,0.65);
   font-size: 0.875rem;
   margin-bottom: 1.75rem;
 }
 
 .error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.3);
-  color: #fca5a5;
+  background: rgba(220,38,38,0.08);
+  border: 1px solid rgba(220,38,38,0.3);
+  color: #dc2626;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-size: 0.855rem;
@@ -30,23 +30,23 @@
 .field label {
   font-size: 0.835rem;
   font-weight: 600;
-  color: rgba(241,245,249,0.75);
+  color: rgba(17,24,39,0.75);
 }
 
 .field input {
   padding: 0.72rem 1rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 9px;
   font-size: 0.9rem;
-  color: #f1f5f9;
+  color: #111827;
   transition: border-color 0.2s, background 0.2s;
   outline: none;
   font-family: inherit;
 }
 
-.field input::placeholder { color: rgba(255,255,255,0.25); }
-.field input:focus { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.06); }
+.field input::placeholder { color: rgba(17,24,39,0.35); }
+.field input:focus { border-color: rgba(22,163,74,0.4); background: rgba(22,163,74,0.04); }
 
 .forgotRow {
   display: flex;
@@ -54,12 +54,12 @@
   font-size: 0.845rem;
 }
 
-.forgotRow a { color: #1a8a1a; transition: color 0.15s; }
-.forgotRow a:hover { color: #6abf6a; }
+.forgotRow a { color: #16a34a; transition: color 0.15s; }
+.forgotRow a:hover { color: #15803d; }
 
 .submitBtn {
   padding: 0.82rem;
-  background: linear-gradient(135deg,#166D16,#1d7a1d);
+  background: linear-gradient(135deg,#16a34a,#15803d);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -79,46 +79,46 @@
   text-align: center;
   margin-top: 1.5rem;
   font-size: 0.855rem;
-  color: rgba(241,245,249,0.45);
+  color: rgba(17,24,39,0.65);
 }
 
-.switchText a { color: #1a8a1a; font-weight: 600; transition: color 0.15s; }
-.switchText a:hover { color: #6abf6a; }
+.switchText a { color: #16a34a; font-weight: 600; transition: color 0.15s; }
+.switchText a:hover { color: #15803d; }
 
 .select {
   padding: 0.72rem 1rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 9px;
   font-size: 0.9rem;
-  color: #f1f5f9;
+  color: #111827;
   transition: border-color 0.2s, background 0.2s;
   outline: none;
   font-family: inherit;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.35)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(17,24,39,0.35)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.85rem center;
   padding-right: 2.5rem;
 }
 
-.select:focus { border-color: rgba(99,102,241,0.6); background-color: rgba(99,102,241,0.06); }
+.select:focus { border-color: rgba(22,163,74,0.4); background-color: rgba(22,163,74,0.04); }
 
-.select option { background: #1e2a45; color: #f1f5f9; }
+.select option { background: #ffffff; color: #111827; }
 
-.inputError { border-color: rgba(239,68,68,0.5) !important; }
+.inputError { border-color: rgba(220,38,38,0.5) !important; }
 
 .fieldError {
   font-size: 0.775rem;
-  color: #fca5a5;
+  color: #dc2626;
   margin-top: 0.1rem;
 }
 
 .success {
-  background: rgba(34,197,94,0.1);
-  border: 1px solid rgba(34,197,94,0.3);
-  color: #86efac;
+  background: rgba(22,163,74,0.08);
+  border: 1px solid rgba(22,163,74,0.3);
+  color: #16a34a;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-size: 0.855rem;

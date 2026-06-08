@@ -21,9 +21,9 @@ function ParticleCanvas({ isLight }: { isLight: boolean }) {
     let raf = 0
 
     // ── constants matching the original ──────────────────────────────────
-    const particleColor = isLight ? '#0b1220' : '#ffffff'
+    const particleColor = isLight ? '#ff0000' : '#ffffff'
     const COLORS = [particleColor, particleColor, particleColor, particleColor]
-    const wireColor = isLight ? '#166D16' : '#34d6d0'
+    const wireColor = isLight ? '#16a34a' : '#34d6d0'
     const GRID = 12
     const PER_COL = 5
     const COUNT = GRID * GRID * PER_COL   // 720
@@ -149,7 +149,7 @@ function ParticleCanvas({ isLight }: { isLight: boolean }) {
                       r: number, g: number, b: number, depth: number) {
       const sz = Math.max(0.3, 0.032 * scale)
       const fog = Math.max(0, Math.min(1, 1 - (depth - 6) / 20))
-      const alpha = fog * (isLight ? 0.35 : 0.85)
+      const alpha = fog * (isLight ? 0.75 : 0.85)
       if (alpha < 0.04) return
 
       ctx.save()
@@ -341,11 +341,11 @@ const features = [
 ]
 
 const modules = [
-  { icon: TrendingUp, title: 'Sales Analytics', color: '#166D16' },
-  { icon: Globe2, title: 'Marketing Analytics', color: '#1d7a1d' },
-  { icon: Users, title: 'Customer Analytics', color: '#06b6d4' },
+  { icon: TrendingUp, title: 'Sales Analytics', color: '#16a34a' },
+  { icon: Globe2, title: 'Marketing Analytics', color: '#15803d' },
+  { icon: Users, title: 'Customer Analytics', color: '#22c55e' },
   { icon: Database, title: 'Inventory Analytics', color: '#10b981' },
-  { icon: DollarSign, title: 'Financial Analytics', color: '#f59e0b' },
+  { icon: DollarSign, title: 'Financial Analytics', color: '#dc2626' },
   { icon: Activity, title: 'Performance Analytics', color: '#ef4444' },
 ]
 
@@ -516,7 +516,7 @@ export default function LandingPage() {
           </div>
           <div className={s.bigMockContent}>
             <div className={s.bigKpis}>
-              {[{ l: 'Revenue', v: '$94.2K', c: '#166D16' }, { l: 'Orders', v: '1,203', c: '#06b6d4' }, { l: 'Customers', v: '12.4K', c: '#10b981' }, { l: 'Profit', v: '48.2%', c: '#f59e0b' }].map(k => (
+              {[{ l: 'Revenue', v: '$94.2K', c: '#16a34a' }, { l: 'Orders', v: '1,203', c: '#10b981' }, { l: 'Customers', v: '12.4K', c: '#22c55e' }, { l: 'Profit', v: '48.2%', c: '#dc2626' }].map(k => (
                 <div key={k.l} className={s.bigKpi} style={{ borderTop: `3px solid ${k.c}` }}>
                   <div className={s.bigKpiLabel}>{k.l}</div>
                   <div className={s.bigKpiVal} style={{ color: k.c }}>{k.v}</div>
@@ -530,7 +530,7 @@ export default function LandingPage() {
                 <div className={s.bigChartBars}>
                   {[42, 48, 55, 51, 63, 71, 68, 78, 82, 90, 87, 94].map((h, i) => (
                     <div key={i} className={s.bigChartBarWrap}>
-                      <div className={s.bigChartBar} style={{ height: `${h}%`, background: 'linear-gradient(180deg,#166D16,#1d7a1d)' }} />
+                      <div className={s.bigChartBar} style={{ height: `${h}%`, background: 'linear-gradient(180deg,#16a34a,#15803d)' }} />
                       <div className={s.bigChartBar} style={{ height: `${Math.floor(h * 0.55)}%`, background: 'rgba(239,68,68,0.5)' }} />
                     </div>
                   ))}
@@ -539,13 +539,13 @@ export default function LandingPage() {
               <div className={s.bigChartSide}>
                 <div className={s.bigChartTitle}>Sales by Region</div>
                 <svg viewBox="0 0 100 100" className={s.pieChart}>
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#166D16" strokeWidth="20" strokeDasharray="88 64" strokeDashoffset="0" />
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#06b6d4" strokeWidth="20" strokeDasharray="55 97" strokeDashoffset="-88" />
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" strokeDasharray="38 114" strokeDashoffset="-143" />
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="20" strokeDasharray="26 126" strokeDashoffset="-181" />
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#16a34a" strokeWidth="20" strokeDasharray="88 64" strokeDashoffset="0" />
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#22c55e" strokeWidth="20" strokeDasharray="55 97" strokeDashoffset="-88" />
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#dc2626" strokeWidth="20" strokeDasharray="38 114" strokeDashoffset="-143" />
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" strokeWidth="20" strokeDasharray="26 126" strokeDashoffset="-181" />
                 </svg>
                 <div className={s.pieLegend}>
-                  {[['#166D16','North 35%'],['#06b6d4','East 28%'],['#10b981','South 22%'],['#f59e0b','West 15%']].map(([c,l]) => (
+                  {[['#16a34a','North 35%'],['#22c55e','East 28%'],['#dc2626','South 22%'],['#ef4444','West 15%']].map(([c,l]) => (
                     <div key={l} className={s.pieLegendItem}><span className={s.pieDot} style={{ background: c as string }} />{l}</div>
                   ))}
                 </div>

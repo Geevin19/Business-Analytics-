@@ -19,7 +19,7 @@ const segments = [
   { name: 'New', value: 20 }, { name: 'Churned', value: 10 },
 ]
 
-const COLORS = ['#166D16', '#1a8a1a', '#166D16', '#6abf6a']
+const COLORS = ['#16a34a', '#22c55e', '#10b981', '#15803d']
 
 export default function CustomersPage() {
   return (

@@ -29,7 +29,7 @@ export default function TrendsPage() {
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={trends}>
             <defs>
-              {[['#166D16', 'g0'], ['#1a8a1a', 'g1'], ['#a3d4a3', 'g2']].map(([c, id]) => (
+              {[['#16a34a', 'g0'], ['#22c55e', 'g1'], ['#10b981', 'g2']].map(([c, id]) => (
                 <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={c} stopOpacity={0.15} />
                   <stop offset="95%" stopColor={c} stopOpacity={0} />

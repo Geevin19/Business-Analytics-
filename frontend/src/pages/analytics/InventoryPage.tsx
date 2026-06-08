@@ -46,7 +46,7 @@ export default function InventoryPage() {
             <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
             <Tooltip {...ttip} />
             <Legend iconType="circle" iconSize={8} />
-            <Bar dataKey="stock" fill="#166D16" radius={[4, 4, 0, 0]} maxBarSize={32} name="Current Stock" />
+            <Bar dataKey="stock" fill="#16a34a" radius={[4, 4, 0, 0]} maxBarSize={32} name="Current Stock" />
             <Bar dataKey="reorder" fill="#a3d4a3" radius={[4, 4, 0, 0]} maxBarSize={32} name="Reorder Point" />
           </BarChart>
         </ResponsiveContainer>

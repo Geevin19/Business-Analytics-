@@ -32,8 +32,8 @@ export default function FinancePage() {
           <AreaChart data={cashFlow}>
             <defs>
               <linearGradient id="in" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#166D16" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#166D16" stopOpacity={0} />
+                <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="out" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.12} />
@@ -45,7 +45,7 @@ export default function FinancePage() {
             <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
             <Tooltip {...ttip} formatter={(v: number) => `$${v.toLocaleString()}`} />
             <Legend iconType="circle" iconSize={8} />
-            <Area type="monotone" dataKey="inflow" stroke="#166D16" fill="url(#in)" strokeWidth={2} name="Inflow" />
+            <Area type="monotone" dataKey="inflow" stroke="#16a34a" fill="url(#in)" strokeWidth={2} name="Inflow" />
             <Area type="monotone" dataKey="outflow" stroke="#f43f5e" fill="url(#out)" strokeWidth={2} name="Outflow" />
           </AreaChart>
         </ResponsiveContainer>

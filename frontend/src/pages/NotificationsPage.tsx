@@ -6,7 +6,7 @@ const typeStyle: Record<string, { dot: string; border: string; label: string }> 
   SUCCESS: { dot: '#22c55e', border: '#22c55e', label: 'Success' },
   WARNING: { dot: '#f59e0b', border: '#f59e0b', label: 'Warning' },
   DANGER:  { dot: '#ef4444', border: '#ef4444', label: 'Alert' },
-  INFO:    { dot: '#166D16', border: '#166D16', label: 'Info' },
+  INFO:    { dot: '#16a34a', border: '#16a34a', label: 'Info' },
 }
 
 function timeAgo(iso: string) {
@@ -30,7 +30,7 @@ export default function NotificationsPage() {
         unreadCount > 0 ? (
           <button
             onClick={markAllRead}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #e8eaf0', borderRadius: 7, fontSize: '0.82rem', fontWeight: 600, color: '#166D16', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #e8eaf0', borderRadius: 7, fontSize: '0.82rem', fontWeight: 600, color: '#16a34a', cursor: 'pointer' }}
           >
             <CheckCheck size={14} /> Mark all read
           </button>
@@ -39,7 +39,7 @@ export default function NotificationsPage() {
     >
       {/* summary bar */}
       {unreadCount > 0 && (
-        <div style={{ background: '#e8f5e8', border: '1px solid #a3d4a3', borderRadius: 10, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.855rem', color: '#166D16', fontWeight: 600 }}>
+        <div style={{ background: '#e8f5e8', border: '1px solid #a3d4a3', borderRadius: 10, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.855rem', color: '#16a34a', fontWeight: 600 }}>
           <Bell size={15} /> You have {unreadCount} unread notification{unreadCount > 1 ? 's' : ''}
         </div>
       )}
@@ -78,7 +78,7 @@ export default function NotificationsPage() {
                   <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {n.title}
                     {!n.read && (
-                      <span style={{ fontSize: '0.62rem', background: '#166D16', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: 3, fontWeight: 700, letterSpacing: '0.03em' }}>NEW</span>
+                      <span style={{ fontSize: '0.62rem', background: '#16a34a', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: 3, fontWeight: 700, letterSpacing: '0.03em' }}>NEW</span>
                     )}
                     <span style={{ fontSize: '0.68rem', background: `${ts.dot}18`, color: ts.dot, padding: '0.1rem 0.45rem', borderRadius: 3, fontWeight: 600 }}>{ts.label}</span>
                   </div>
