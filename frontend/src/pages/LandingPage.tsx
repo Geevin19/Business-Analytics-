@@ -309,8 +309,8 @@ function DashboardMock() {
           <div className={s.mockChart}>
             <div className={s.mockChartTitle}>Customer Growth</div>
             <svg viewBox="0 0 100 50" className={s.mockLine}>
-              <polyline points="0,45 10,38 20,35 30,28 40,25 50,18 60,15 70,10 80,8 90,5 100,3" fill="none" stroke="rgba(99,102,241,0.8)" strokeWidth="2" />
-              <polyline points="0,45 10,38 20,35 30,28 40,25 50,18 60,15 70,10 80,8 90,5 100,3 100,50 0,50" fill="rgba(99,102,241,0.15)" stroke="none" />
+              <polyline points="0,45 10,38 20,35 30,28 40,25 50,18 60,15 70,10 80,8 90,5 100,3" fill="none" stroke="rgba(22,163,74,0.8)" strokeWidth="2" />
+              <polyline points="0,45 10,38 20,35 30,28 40,25 50,18 60,15 70,10 80,8 90,5 100,3 100,50 0,50" fill="rgba(22,163,74,0.15)" stroke="none" />
             </svg>
           </div>
         </div>

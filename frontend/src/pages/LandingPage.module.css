@@ -256,7 +256,7 @@
 /* ── Reports ── */
 .reportsGrid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(5,1fr); gap: 1rem; }
 .reportCard { background: var(--lp-surface-2); border: 1px solid var(--lp-border); border-radius: 12px; padding: 1.5rem 1rem; text-align: center; backdrop-filter: blur(8px); transition: all 0.2s; }
-.reportCard:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.35); }
+.reportCard:hover { transform: translateY(-4px); border-color: rgba(22,163,74,0.35); }
 .reportIcon { width: 44px; height: 44px; border-radius: 10px; background: rgba(22,163,74,0.12); display: flex; align-items: center; justify-content: center; color: #16a34a; margin: 0 auto 0.75rem; }
 .reportTitle { font-size: 0.88rem; font-weight: 600; color: var(--lp-text); margin-bottom: 0.4rem; }
 .reportDesc { font-size: 0.78rem; color: var(--lp-text-faint); line-height: 1.5; }
@@ -291,7 +291,7 @@
 .faqSection { padding: 6rem 1.5rem; }
 .faqList { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem; }
 .faqItem { background: var(--lp-surface-2); border: 1px solid var(--lp-border); border-radius: 12px; padding: 1.25rem 1.5rem; cursor: pointer; transition: border-color 0.2s; }
-.faqItem:hover { border-color: rgba(99,102,241,0.3); }
+.faqItem:hover { border-color: rgba(22,163,74,0.3); }
 .faqQ { display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; font-weight: 600; color: var(--lp-text); gap: 1rem; }
 .faqChev { color: var(--lp-faq-chev); transition: transform 0.25s; flex-shrink: 0; }
 .faqChevOpen { transform: rotate(180deg); }
@@ -316,7 +316,7 @@
 .footerBottom { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid var(--lp-border-mid); font-size: 0.82rem; color: var(--lp-text-dim); }
 .footerSocials { display: flex; gap: 0.6rem; }
 .footerSocial { width: 32px; height: 32px; border-radius: 8px; background: var(--lp-glass-2); border: 1px solid var(--lp-border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--lp-footer-social); transition: all 0.15s; }
-.footerSocial:hover { background: rgba(99,102,241,0.2); color: var(--lp-text); }
+.footerSocial:hover { background: rgba(22,163,74,0.2); color: var(--lp-text); }
 
 /* ── Responsive ── */
 @media (max-width: 1100px) {

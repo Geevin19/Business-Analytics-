@@ -72,8 +72,8 @@
 }
 
 .field input:focus {
-  border-color: rgba(99, 102, 241, 0.6);
-  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(22, 163, 74, 0.6);
+  background: rgba(22, 163, 74, 0.08);
 }
 
 .forgotRow {
@@ -83,17 +83,17 @@
 }
 
 .forgotRow a {
-  color: #818cf8;
+  color: #16a34a;
   transition: color 0.15s;
 }
 
 .forgotRow a:hover {
-  color: #a5b4fc;
+  color: #22c55e;
 }
 
 .submitBtn {
   padding: 0.82rem;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #16a34a, #22c55e);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -125,13 +125,13 @@
 }
 
 .switchText a {
-  color: #818cf8;
+  color: #16a34a;
   font-weight: 600;
   transition: color 0.15s;
 }
 
 .switchText a:hover {
-  color: #a5b4fc;
+  color: #22c55e;
 }
 
 /* Select dropdown */
@@ -155,8 +155,8 @@
 }
 
 .select:focus {
-  border-color: rgba(99, 102, 241, 0.6);
-  background-color: rgba(99, 102, 241, 0.08);
+  border-color: rgba(22, 163, 74, 0.6);
+  background-color: rgba(22, 163, 74, 0.08);
 }
 
 .select option {
