@@ -82,10 +82,21 @@
 
 .card {
   width: 100%;
-  background: rgba(15, 23, 42, 0.82);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 18px;
   padding: 2.25rem 2rem;
   backdrop-filter: blur(24px);
   box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b1220;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow-y: auto;
 }

@@ -8,15 +8,11 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | null>(null)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Always start with light theme
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-
-  useEffect(() => {
-    // Force light theme on first load, ignore stored preferences
-    document.documentElement.setAttribute('data-theme', 'light')
-    localStorage.setItem('theme', 'light')
-    setTheme('light')
-  }, [])
+  // Initialize theme state from localStorage, defaulting to 'light'
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const stored = localStorage.getItem('theme')
+    return (stored === 'light' || stored === 'dark') ? stored : 'light'
+  })
 
   useEffect(() => {
     // Apply theme changes

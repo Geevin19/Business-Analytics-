@@ -56,7 +56,7 @@
   white-space: nowrap;
 }
 .link:hover { background: #0d1f0d; color: #f1f5f9; }
-.active { background: rgba(99, 102, 241, 0.2); color: #6abf6a; }
+.active { background: var(--primary-light) !important; color: var(--primary) !important; }
 
 .footer {
   padding: 0.75rem;
