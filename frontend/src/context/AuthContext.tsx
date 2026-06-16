@@ -59,8 +59,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw new Error(error.message)
+    // Use backend login endpoint which returns a Supabase session object
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: 'Login failed' }))
+      throw new Error(body.message || 'Login failed')
+    }
+    const body = await res.json()
+    if (!body?.session?.access_token) throw new Error('Login did not return a valid session')
+
+    // Initialize Supabase client with returned session
+    await supabase.auth.setSession({ access_token: body.session.access_token, refresh_token: body.session.refresh_token })
   }
 
   async function register(name: string, email: string, password: string) {

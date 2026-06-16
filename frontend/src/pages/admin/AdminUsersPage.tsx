@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import DataTable from '@/components/admin/DataTable'
 import { useToast } from '@/components/admin/useToast'
-import { mockUsers, AdminUser } from '@/data/adminMockData'
+import { AdminUser } from '@/data/adminMockData'
+import { getAdminUsers } from '@/services/admin.service'
 import { UserPlus } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
@@ -12,6 +13,11 @@ function statusBadge(status: string) {
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState(mockUsers)
+  useEffect(() => {
+    let mounted = true
+    getAdminUsers().then(data => { if (mounted) setUsers(data) }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [editing, setEditing] = useState<AdminUser | null>(null)
   const { show, Toast } = useToast()

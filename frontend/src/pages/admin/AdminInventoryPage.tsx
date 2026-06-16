@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import DataTable from '@/components/admin/DataTable'
 import { useToast } from '@/components/admin/useToast'
-import { mockInventory, InventoryItem } from '@/data/adminMockData'
+import { InventoryItem } from '@/data/adminMockData'
+import { getInventory, updateInventoryItem } from '@/services/admin.service'
 import { Plus, AlertTriangle } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
@@ -13,8 +14,9 @@ const statusClass: Record<string, string> = {
 }
 
 export default function AdminInventoryPage() {
-  const [items, setItems] = useState(mockInventory)
+  const [items, setItems] = useState<InventoryItem[]>([])
   const { show, Toast } = useToast()
+  useEffect(() => { let mounted = true; getInventory().then(d => { if (mounted) setItems(d.items ?? []) }).catch(() => {}); return () => { mounted = false } }, [])
   const lowStock = items.filter(i => i.status === 'Low Stock' || i.status === 'Out of Stock')
 
   const columns = [
@@ -42,7 +44,17 @@ export default function AdminInventoryPage() {
         filters={[{ key: 'status', label: 'All Status', options: ['In Stock', 'Low Stock', 'Out of Stock'] }]}
         actions={(row: InventoryItem) => (
           <>
-            <button className={s.btnIcon} onClick={() => show(`Stock updated for ${row.productName}`)}>Update Stock</button>
+            <button className={s.btnIcon} onClick={async () => {
+              const val = window.prompt(`New stock for ${row.productName}`, String((row as any).stock ?? 0))
+              if (!val) return
+              const num = Number(val)
+              if (Number.isNaN(num)) { show('Invalid number'); return }
+              try {
+                const updated = await updateInventoryItem(row.id, { stock_quantity: num })
+                setItems(prev => prev.map(it => it.id === row.id ? { ...it, stock: updated.stock_quantity ?? num, status: (updated.stock_quantity ?? num) > 0 ? 'In Stock' : 'Out of Stock' } : it))
+                show('Stock updated')
+              } catch (e) { show('Failed to update stock') }
+            }}>Update Stock</button>
             <button className={s.btnDanger} onClick={() => { setItems(i => i.filter(x => x.id !== row.id)); show('Item removed') }}>Delete</button>
           </>
         )}

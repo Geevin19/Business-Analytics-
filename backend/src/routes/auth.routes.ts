@@ -52,15 +52,21 @@ router.post('/login', async (req: Request, res: Response) => {
   if (!email || !password) { res.status(400).json({ message: 'Email and password required' }); return }
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error || !data.user) { res.status(401).json({ message: 'Invalid email or password' }); return }
+  if (error || !data.user) {
+    console.error('Login error:', error)
+    const msg = error?.message ?? 'Invalid email or password'
+    res.status(401).json({ message: msg })
+    return
+  }
 
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
 
   // send login alert email (non-blocking)
   try { await sendLoginAlertEmail(email, profile?.name ?? 'there') } catch (e) { console.error('Email error:', e) }
 
+  // return full session so client can set Supabase client session
   res.json({
-    token: data.session.access_token,
+    session: data.session,
     user: { id: data.user.id, name: profile?.name, email: data.user.email, role: profile?.role ?? 'USER' },
   })
 })

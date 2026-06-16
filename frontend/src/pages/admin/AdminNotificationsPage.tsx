@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import { useToast } from '@/components/admin/useToast'
 import { mockNotifications } from '@/data/adminMockData'
+import { getNotifications, markNotificationRead } from '@/services/admin.service'
 import { Bell, Plus } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
 export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState(mockNotifications)
   const { show, Toast } = useToast()
+
+  useEffect(() => { let mounted = true; getNotifications().then(d => { if (mounted && d) setNotifications(d) }).catch(() => {}); return () => { mounted = false } }, [])
 
   return (
     <AdminPageShell title="Notification Center" subtitle="Create, send and manage system notifications"
@@ -28,9 +31,8 @@ export default function AdminNotificationsPage() {
               </div>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 {!n.read && (
-                  <button className={s.btnIcon} onClick={() => {
-                    setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
-                    show('Marked as read')
+                  <button className={s.btnIcon} onClick={async () => {
+                    try { await markNotificationRead(n.id); setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x)); show('Marked as read') } catch { show('Unable to mark read') }
                   }}>Mark Read</button>
                 )}
                 <button className={s.btnDanger} onClick={() => {

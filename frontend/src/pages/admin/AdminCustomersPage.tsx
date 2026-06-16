@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import DataTable from '@/components/admin/DataTable'
 import { useToast } from '@/components/admin/useToast'
-import { mockCustomers, Customer } from '@/data/adminMockData'
+import { Customer } from '@/data/adminMockData'
+import { getCustomers } from '@/services/admin.service'
 import { UserPlus } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState(mockCustomers)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  useEffect(() => { let mounted = true; getCustomers().then(d => { if (mounted) setCustomers(d) }).catch(() => {}); return () => { mounted = false } }, [])
   const [modal, setModal] = useState(false)
   const { show, Toast } = useToast()
 

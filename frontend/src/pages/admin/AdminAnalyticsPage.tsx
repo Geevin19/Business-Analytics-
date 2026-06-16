@@ -3,7 +3,9 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { monthlyGrowth, regionalPerformance, productPerformance } from '@/data/adminMockData'
+import { useEffect, useState } from 'react'
+import { getAnalyticsOverview } from '@/services/admin.service'
+import { monthlyGrowth as mgMock, regionalPerformance as rpMock, productPerformance as ppMock } from '@/data/adminMockData'
 import s from '@/components/admin/admin.module.css'
 
 const COLORS = ['#166D16', '#06b6d4', '#10b981', '#f59e0b', '#1d7a1d']
@@ -11,6 +13,21 @@ const COLORS = ['#166D16', '#06b6d4', '#10b981', '#f59e0b', '#1d7a1d']
 const tabs = ['Revenue', 'Sales', 'Customers', 'Products', 'Inventory', 'Growth', 'Regional']
 
 export default function AdminAnalyticsPage() {
+  const [monthlyGrowth, setMonthlyGrowth] = useState<any[]>(mgMock)
+  const [regionalPerformance, setRegionalPerformance] = useState<any[]>(rpMock)
+  const [productPerformance, setProductPerformance] = useState<any[]>(ppMock)
+
+  useEffect(() => {
+    let mounted = true
+    getAnalyticsOverview().then((d: any) => {
+      if (!mounted) return
+      setMonthlyGrowth(d.monthlyGrowth || mgMock)
+      setRegionalPerformance(d.regionalPerformance || rpMock)
+      setProductPerformance(d.productPerformance || ppMock)
+    }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
   return (
     <AdminPageShell title="Analytics" subtitle="Revenue, sales, customer, product, inventory and regional insights">
       <div className={s.tabs}>

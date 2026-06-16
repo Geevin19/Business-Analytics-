@@ -10,6 +10,9 @@ import inventoryRoutes from './routes/inventory.routes'
 import aiRoutes from './routes/ai.routes'
 import reportRoutes from './routes/report.routes'
 import adminRoutes from './routes/admin.routes'
+import productsRoutes from './routes/products.routes'
+import notificationsRoutes from './routes/notifications.routes'
+import analyticsRoutes from './routes/analytics.routes'
 import { errorHandler } from './middleware/error.middleware'
 
 const app = express()
@@ -17,6 +20,16 @@ const PORT = Number(process.env.PORT) || 5000
 
 app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:4200'], credentials: true }))
 app.use(express.json())
+
+// Simple request logger for debugging (does not log passwords)
+app.use((req, _res, next) => {
+	try {
+		const safeBody = { ...req.body }
+		if (safeBody.password) safeBody.password = '***'
+		console.log(`[req] ${req.method} ${req.path} body=`, safeBody)
+	} catch (e) { /* ignore */ }
+	next()
+})
 
 app.use('/api/auth', authRoutes)
 app.use('/api/dashboard', dashboardRoutes)
@@ -27,6 +40,9 @@ app.use('/api/inventory', inventoryRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/products', productsRoutes)
+app.use('/api/notifications', notificationsRoutes)
+app.use('/api/analytics', analyticsRoutes)
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
 

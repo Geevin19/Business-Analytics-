@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import DataTable from '@/components/admin/DataTable'
 import { useToast } from '@/components/admin/useToast'
-import { mockSales, Sale } from '@/data/adminMockData'
+import { Sale } from '@/data/adminMockData'
+import { getSales } from '@/services/admin.service'
 import { Plus } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
@@ -13,7 +14,8 @@ const statusClass: Record<string, string> = {
 }
 
 export default function AdminSalesPage() {
-  const [sales, setSales] = useState(mockSales)
+  const [sales, setSales] = useState<Sale[]>([])
+  useEffect(() => { let mounted = true; getSales().then(d => { if (mounted) setSales(d) }).catch(() => {}); return () => { mounted = false } }, [])
   const { show, Toast } = useToast()
 
   const columns = [

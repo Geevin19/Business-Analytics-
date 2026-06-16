@@ -7,22 +7,45 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { adminKpis, recentActivities, monthlyGrowth, regionalPerformance } from '@/data/adminMockData'
+import { useEffect, useState } from 'react'
+import { getAnalyticsOverview, getDashboard } from '@/services/admin.service'
+import { adminKpis as mockKpis, recentActivities as mockActivities } from '@/data/adminMockData'
 import s from '@/components/admin/admin.module.css'
 
 const COLORS = ['#166D16', '#06b6d4', '#10b981', '#f59e0b']
 
 export default function AdminHomePage() {
+  const [monthlyGrowth, setMonthlyGrowth] = useState<any[]>([])
+  const [regionalPerformance, setRegionalPerformance] = useState<any[]>([])
+  const [recentActivities, setRecentActivities] = useState<any[]>(mockActivities)
+  const [kpis, setKpis] = useState<any>(mockKpis)
+
+  useEffect(() => {
+    let mounted = true
+    Promise.all([getAnalyticsOverview().catch(() => null), getDashboard().catch(() => null)]).then(([a, db]: any) => {
+      if (!mounted) return
+      if (a) {
+        setMonthlyGrowth(a.monthlyGrowth || [])
+        setRegionalPerformance(a.regionalPerformance || [])
+        setRecentActivities(a.recentActivities?.map((r: any) => ({ id: r.created_at, text: `${r.user_email}: ${r.action}`, time: new Date(r.created_at).toLocaleString() })) || mockActivities)
+      }
+      if (db) {
+        setKpis(db)
+      }
+    }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
   return (
     <AdminPageShell title="Admin Dashboard" subtitle="Full administrative control and business overview">
       <div className={s.statsGrid}>
-        <StatCard label="Total Revenue" value={adminKpis.revenue} trend="+18%" trendUp icon={<DollarSign size={20} />} />
-        <StatCard label="Total Sales" value={adminKpis.sales} trend="+12%" trendUp icon={<TrendingUp size={20} />} />
-        <StatCard label="Total Customers" value={adminKpis.customers} trend="+9%" trendUp icon={<Users size={20} />} />
-        <StatCard label="Total Users" value={adminKpis.users} trend="+4%" trendUp icon={<UserCircle size={20} />} />
-        <StatCard label="Total Products" value={adminKpis.products} trend="+2%" trendUp icon={<Package size={20} />} />
-        <StatCard label="Total Orders" value={adminKpis.orders} trend="+11%" trendUp icon={<ShoppingCart size={20} />} />
-        <StatCard label="Profit & Loss" value={adminKpis.profitLoss} trend="Positive" trendUp icon={<BarChart3 size={20} />} />
+        <StatCard label="Revenue (K)" value={kpis.totalRevenue ?? '$0'} trendUp icon={<DollarSign size={20} />} />
+        <StatCard label="Total Sales" value={kpis.totalSales ?? 0} trendUp icon={<TrendingUp size={20} />} />
+        <StatCard label="Total Customers" value={kpis.totalCustomers ?? 0} trendUp icon={<Users size={20} />} />
+        <StatCard label="Total Users" value={kpis.totalUsers ?? 0} trendUp icon={<UserCircle size={20} />} />
+        <StatCard label="Total Products" value={kpis.totalProducts ?? 0} trendUp icon={<Package size={20} />} />
+        <StatCard label="Total Orders" value={kpis.totalSales ?? 0} trendUp icon={<ShoppingCart size={20} />} />
+        <StatCard label="Profit & Loss" value={(kpis.netProfit ?? 0) > 0 ? '+$' + Math.round(kpis.netProfit) : '$0'} trendUp icon={<BarChart3 size={20} />} />
       </div>
 
       <div className={s.chartsRow}>
@@ -56,7 +79,7 @@ export default function AdminHomePage() {
         <div className={s.card}>
           <div className={s.cardTitle}>Recent Activities</div>
           <div className={s.activityList}>
-            {recentActivities.map(a => (
+            {recentActivities.map((a: any) => (
               <div key={a.id} className={s.activityItem}>
                 <span>{a.text}</span>
                 <span className={s.activityTime}>{a.time}</span>
@@ -71,7 +94,7 @@ export default function AdminHomePage() {
               <Pie data={regionalPerformance} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" nameKey="region" paddingAngle={3}>
                 {regionalPerformance.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: number) => `${v}`} />
               <Legend iconType="circle" iconSize={8} />
             </PieChart>
           </ResponsiveContainer>
