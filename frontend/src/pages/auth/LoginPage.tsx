@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import styles from './Auth.module.css'
 
+const ADMIN_EMAIL = 'geevinrs@gmail.com'
+
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -16,6 +18,13 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+
+    // Block admin from logging in through user portal
+    if (email.toLowerCase() === ADMIN_EMAIL) {
+      setError('Admin accounts must use the Admin Portal.')
+      return
+    }
+
     setLoading(true)
     try {
       await login(email, password)
@@ -63,6 +72,9 @@ export default function LoginPage() {
       </form>
       <p className={styles.switchText}>
         Don't have an account? <Link to="/auth/register">Create one</Link>
+      </p>
+      <p className={styles.switchText} style={{ marginTop: '0.5rem', fontSize: '0.78rem' }}>
+        Administrator? <Link to="/admin/login">Admin Portal →</Link>
       </p>
     </div>
   )

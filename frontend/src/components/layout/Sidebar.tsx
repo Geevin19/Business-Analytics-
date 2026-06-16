@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, BarChart2, Users, DollarSign, Package,
-  Brain, FileText, Bell, Settings, User, Shield, LogOut,
+  Brain, FileText, Bell, Settings, User, LogOut,
   ChevronDown, TrendingUp, Zap
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -27,7 +27,6 @@ const nav = [
   },
   { label: 'Reports', icon: FileText, to: '/reports' },
   { label: 'Notifications', icon: Bell, to: '/notifications' },
-  { label: 'Admin Panel', icon: Shield, to: '/admin/dashboard' },
   { label: 'Profile', icon: User, to: '/profile' },
   { label: 'Settings', icon: Settings, to: '/settings' },
 ]

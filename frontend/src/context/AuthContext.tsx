@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
+const ADMIN_EMAIL = 'geevinrs@gmail.com'
+
 interface Profile {
   id: string
   name: string
@@ -16,6 +18,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   isAuthenticated: boolean
+  isAdmin: boolean
   loading: boolean
 }
 
@@ -28,7 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -36,7 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       else setLoading(false)
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -66,8 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw new Error(error.message)
     if (data.user) {
-      // Create profile row
-      await supabase.from('profiles').insert({ id: data.user.id, name, role: 'USER' })
+      const role = data.user.email === ADMIN_EMAIL ? 'ADMIN' : 'USER'
+      await supabase.from('profiles').insert({ id: data.user.id, name, role })
     }
   }
 
@@ -75,10 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  const isAdmin = user?.email === ADMIN_EMAIL || profile?.role === 'ADMIN'
+
   return (
     <AuthContext.Provider value={{
       user, profile, session, login, register, logout,
       isAuthenticated: !!session,
+      isAdmin,
       loading,
     }}>
       {children}
