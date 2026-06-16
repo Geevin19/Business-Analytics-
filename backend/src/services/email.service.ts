@@ -9,10 +9,13 @@ if (!GMAIL_USER || !GMAIL_PASS) {
 }
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',          // use Gmail service preset (handles host/port/tls automatically)
+  service: 'gmail',
   auth: {
     user: GMAIL_USER,
-    pass: GMAIL_PASS,        // 16-char app password (no spaces)
+    pass: GMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 })
 
