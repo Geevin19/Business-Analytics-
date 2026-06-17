@@ -2,7 +2,6 @@
   display: flex;
   min-height: 100vh;
   background: var(--bg);
-  transition: background 0.2s;
 }
 
 .main {
@@ -14,10 +13,8 @@
 
 .content {
   flex: 1;
-  padding: 1.5rem 2rem;
+  padding: 1.5rem;
   overflow-y: auto;
-  background: var(--bg);
-  transition: background 0.2s;
 }
 
 @media (max-width: 768px) {

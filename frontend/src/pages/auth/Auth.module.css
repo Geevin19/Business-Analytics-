@@ -180,3 +180,24 @@
   text-align: center;
   margin-bottom: 0.75rem;
 }
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: #16a34a;
+  font-size: 0.855rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+
+.linkBtn:hover {
+  color: #22c55e;
+}
+
+.linkBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

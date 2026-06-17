@@ -1,22 +1,96 @@
 .page { display: flex; flex-direction: column; gap: 1.25rem; }
 
-.header { display: flex; align-items: center; justify-content: space-between; }
+.header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
 
 .title { font-size: 1.35rem; font-weight: 700; color: var(--text); }
 .subtitle { color: var(--text-faint); font-size: 0.855rem; margin-top: 0.15rem; }
 
-.dateChip {
-  padding: 0.4rem 0.875rem;
+.headerActions { display: flex; align-items: center; gap: 0.5rem; }
+
+.periodToggle {
+  display: inline-flex;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 500;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.statsGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.periodBtn {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
 
+.periodBtn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.filterBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filterBtn:hover { background: var(--surface-2); }
+
+/* ── KPI Row ── */
+.kpiRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+.kpiCard {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+.kpiCard:hover { box-shadow: var(--shadow); }
+
+.kpiIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpiBody { display: flex; flex-direction: column; gap: 0.1rem; }
+
+.kpiLabel { font-size: 0.78rem; color: var(--text-faint); font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+
+.kpiValue { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+
+.kpiChange {
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 0.1rem;
+  color: #16a34a;
+}
+
+/* ── Charts ── */
 .chartsRow { display: grid; grid-template-columns: 3fr 2fr; gap: 1rem; }
 
 .chartCard {
@@ -27,14 +101,110 @@
   transition: background 0.2s;
 }
 
-.cardHeader { margin-bottom: 1.25rem; }
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
 .cardHeader h3 { font-size: 0.92rem; font-weight: 600; color: var(--text); }
 
+.cardActions { display: flex; align-items: center; gap: 0.5rem; }
+
+.moreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.moreBtn:hover { background: var(--surface-2); }
+
+.viewAll {
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.viewAll:hover { background: var(--primary-light); }
+
+/* ── Transaction Table ── */
+.transactionTable {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1.2fr 1.2fr 1fr;
+  gap: 0.5rem;
+  padding: 0.65rem 0.5rem;
+  background: var(--surface-2);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1.2fr 1.2fr 1fr;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  transition: background 0.1s;
+}
+
+.tableRow:last-child { border-bottom: none; }
+.tableRow:hover { background: var(--surface-2); }
+
+.invoiceId { font-weight: 600; color: var(--text); font-size: 0.82rem; }
+.customerName { color: var(--text-2); font-weight: 500; }
+.amount { font-weight: 700; color: var(--text); }
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.completed { background: #dcfce7; color: #15803d; }
+.pending { background: #fef3c7; color: #b45309; }
+.processing { background: #dbeafe; color: #1d4ed8; }
+
+.date { color: var(--text-faint); font-size: 0.8rem; }
+
+/* ── Responsive ── */
 @media (max-width: 1100px) {
-  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+  .kpiRow { grid-template-columns: repeat(2, 1fr); }
   .chartsRow { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
-  .statsGrid { grid-template-columns: 1fr; }
+  .kpiRow { grid-template-columns: 1fr; }
+  .tableHeader, .tableRow { grid-template-columns: 1fr 1fr 0.8fr; }
+  .tableHeader span:nth-child(5), .tableRow span:nth-child(5) { display: none; }
 }

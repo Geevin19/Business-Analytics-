@@ -10,14 +10,15 @@ import { useState } from 'react'
 
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
-  {
-    label: 'Analytics', icon: BarChart2, children: [
-      { label: 'Sales', to: '/analytics/sales', icon: TrendingUp },
-      { label: 'Customers', to: '/analytics/customers', icon: Users },
-      { label: 'Finance', to: '/analytics/finance', icon: DollarSign },
-      { label: 'Inventory', to: '/analytics/inventory', icon: Package },
-    ]
-  },
+    {
+      label: 'Analytics', icon: BarChart2, children: [
+        { label: 'Sales', to: '/analytics/sales', icon: TrendingUp },
+        { label: 'Customers', to: '/analytics/customers', icon: Users },
+        { label: 'Finance', to: '/analytics/finance', icon: DollarSign },
+        { label: 'Inventory', to: '/analytics/inventory', icon: Package },
+        { label: 'User Data', to: '/analytics/user-data', icon: BarChart2 },
+      ]
+    },
   {
     label: 'AI Features', icon: Brain, children: [
       { label: 'Forecasting', to: '/ai/forecasting', icon: TrendingUp },

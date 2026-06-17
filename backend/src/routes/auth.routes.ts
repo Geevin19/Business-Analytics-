@@ -22,28 +22,53 @@ router.post('/register', async (req: Request, res: Response) => {
   if (!parsed.success) { res.status(400).json({ message: parsed.error.errors[0].message }); return }
   const { name, email, password } = parsed.data
 
+  // Create the user WITHOUT auto-confirming — user must verify email first
   const { data, error } = await supabase.auth.admin.createUser({
-    email, password,
-    email_confirm: true,
+    email,
+    password,
+    email_confirm: false,          // 🔒 require email verification
     user_metadata: { name },
   })
   if (error) { res.status(400).json({ message: error.message }); return }
 
-  // create profile
+  // create profile (user exists but email not yet confirmed)
   await supabase.from('profiles').insert({ id: data.user.id, name, role: 'USER' })
 
-  // send welcome email via Gmail
-  try { await sendWelcomeEmail(email, name) } catch (e) { console.error('Email error:', e) }
+  // Generate a verification link via Supabase admin API
+  let verificationLink: string | null = null
+  try {
+    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
+      type: 'signup',
+      email,
+    })
+    if (!linkError && linkData?.properties?.action_link) {
+      verificationLink = linkData.properties.action_link
+    }
+  } catch (e) {
+    console.error('Failed to generate verification link:', e)
+  }
+
+  // Send a branded welcome email with verification link
+  try {
+    await sendWelcomeEmail(email, name, verificationLink)
+  } catch (e) {
+    console.error('Welcome email error:', e)
+  }
 
   // insert welcome notification
   await supabase.from('notifications').insert({
     user_id: data.user.id,
     title: 'Welcome to BizAnalytics!',
-    message: `Hi ${name}, your account is ready. Explore your dashboard and start making data-driven decisions.`,
+    message: `Hi ${name}, please check your email to verify your account before logging in.`,
     type: 'SUCCESS',
   })
 
-  res.status(201).json({ message: 'Account created successfully' })
+  // ✅ Do NOT auto-login — user must verify email first
+  // Return the verification link as a fallback in case email delivery fails
+  res.status(201).json({
+    message: 'Account created successfully! Please check your email to verify your account before logging in.',
+    verificationLink: verificationLink || undefined,
+  })
 })
 
 // ── Login ─────────────────────────────────────────────────────────────────
@@ -59,6 +84,15 @@ router.post('/login', async (req: Request, res: Response) => {
     return
   }
 
+  // 🔒 Block login if email is not verified
+  if (!data.user.email_confirmed_at) {
+    res.status(403).json({
+      message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+      needsVerification: true,
+    })
+    return
+  }
+
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
 
   // send login alert email (non-blocking)
@@ -69,6 +103,33 @@ router.post('/login', async (req: Request, res: Response) => {
     session: data.session,
     user: { id: data.user.id, name: profile?.name, email: data.user.email, role: profile?.role ?? 'USER' },
   })
+})
+
+// ── Resend verification email ─────────────────────────────────────────────
+router.post('/resend-verification', async (req: Request, res: Response) => {
+  const { email } = req.body
+  if (!email) { res.status(400).json({ message: 'Email required' }); return }
+
+  try {
+    // Generate a new verification link
+    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
+      type: 'signup',
+      email,
+    })
+    if (!linkError && linkData?.properties?.action_link) {
+      // Send verification email
+      await sendWelcomeEmail(email, linkData.properties?.name ?? 'there', linkData.properties.action_link)
+      res.json({
+        message: 'Verification email resent. Please check your inbox.',
+        verificationLink: linkData.properties.action_link,
+      })
+    } else {
+      res.status(400).json({ message: 'Could not send verification email. Please try again.' })
+    }
+  } catch (e) {
+    console.error('Verification email error:', e)
+    res.status(500).json({ message: 'Failed to send verification email.' })
+  }
 })
 
 // ── Me ────────────────────────────────────────────────────────────────────
@@ -83,13 +144,20 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body
   if (!email) { res.status(400).json({ message: 'Email required' }); return }
 
-  const resetLink = `http://localhost:3000/auth/reset-password`
-
   try {
-    // also trigger Supabase reset (puts token in URL)
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo: resetLink })
-    // send our branded email
-    await sendPasswordResetEmail(email, resetLink)
+    // Generate a password reset link via Supabase admin API (no email sent)
+    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
+      type: 'recovery',
+      email,
+    })
+    if (!linkError && linkData?.properties?.action_link) {
+      // Send the branded reset email ourselves via Gmail app password
+      await sendPasswordResetEmail(email, linkData.properties.action_link)
+    } else {
+      // Fallback: send generic link
+      const fallbackLink = `http://localhost:3000/auth/reset-password`
+      await sendPasswordResetEmail(email, fallbackLink)
+    }
   } catch (e) {
     console.error('Reset email error:', e)
   }

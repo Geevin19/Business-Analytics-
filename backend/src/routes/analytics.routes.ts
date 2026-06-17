@@ -45,7 +45,7 @@ router.get('/overview', authenticate, async (_req: AuthRequest, res: Response) =
   }))
 
   // product performance: top 5 by total sales amount
-  const prodMap: Record<string, number> = {}
+  const prodMap: Record<string, number> = {};
   (sales ?? []).forEach((s: any) => { if (s.product_id) prodMap[s.product_id] = (prodMap[s.product_id] || 0) + Number(s.total ?? 0) })
   const productPerformance = (products ?? []).map((p: any) => ({ name: p.name, sales: prodMap[p.id] ?? 0 })).sort((a: any, b: any) => b.sales - a.sales).slice(0, 10)
 

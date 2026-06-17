@@ -16,6 +16,7 @@ interface AuthContextType {
   session: Session | null
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
+  resendVerification: (email: string) => Promise<void>
   logout: () => Promise<void>
   isAuthenticated: boolean
   isAdmin: boolean
@@ -66,6 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({ message: 'Login failed' }))
+      // If the backend tells us the email needs verification, throw a specific error
+      if (body?.needsVerification) {
+        const err = new Error(body.message || 'Please verify your email.') as any
+        err.needsVerification = true
+        err.email = email
+        throw err
+      }
       throw new Error(body.message || 'Login failed')
     }
     const body = await res.json()
@@ -76,12 +84,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(name: string, email: string, password: string) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) throw new Error(error.message)
-    if (data.user) {
-      const role = data.user.email === ADMIN_EMAIL ? 'ADMIN' : 'USER'
-      await supabase.from('profiles').insert({ id: data.user.id, name, role })
+    // Use backend registration endpoint which creates user via admin API
+    // (bypasses Supabase confirmation email and sends branded welcome via Gmail)
+    const res = await fetch('/api/auth/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: 'Registration failed' }))
+      throw new Error(body.message || 'Registration failed')
     }
+    const body = await res.json()
+    // ✅ Do NOT auto-login — user must verify email first
+    return body
+  }
+
+  async function resendVerification(email: string) {
+    const res = await fetch('/api/auth/resend-verification', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: 'Failed to resend verification email' }))
+      throw new Error(body.message || 'Failed to resend verification email')
+    }
+    const body = await res.json()
+    return body
   }
 
   async function logout() {
@@ -92,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, profile, session, login, register, logout,
+      user, profile, session, login, register, resendVerification, logout,
       isAuthenticated: !!session,
       isAdmin,
       loading,

@@ -1,4 +1,7 @@
 import 'dotenv/config'
+// Fix SSL certificate verification issue on Windows with Node.js 24
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 import express from 'express'
 import cors from 'cors'
 import authRoutes from './routes/auth.routes'
@@ -13,6 +16,7 @@ import adminRoutes from './routes/admin.routes'
 import productsRoutes from './routes/products.routes'
 import notificationsRoutes from './routes/notifications.routes'
 import analyticsRoutes from './routes/analytics.routes'
+import trendRoutes from './routes/trend.routes'
 import { errorHandler } from './middleware/error.middleware'
 
 const app = express()
@@ -43,6 +47,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/products', productsRoutes)
 app.use('/api/notifications', notificationsRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/trend', trendRoutes)
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
 
