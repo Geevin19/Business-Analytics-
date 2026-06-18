@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [location, setLocation] = useState<'all' | 'us' | 'eu' | 'asia'>('all')
   const [selectedChart, setSelectedChart] = useState<'Area' | 'Bar' | 'Line' | 'Pie'>('Area')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [marketSurvey, setMarketSurvey] = useState<any[]>([])
 
   const loadDashboard = useCallback(async () => {
     setIsRefreshing(true)
@@ -77,6 +78,36 @@ export default function DashboardPage() {
     loadDashboard()
   }, [loadDashboard])
 
+  // Load market survey data
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const [productsRes, salesRes] = await Promise.all([
+          api.get('/products').then(r => r.data).catch(() => []),
+          api.get('/sales').then(r => r.data).catch(() => []),
+        ])
+        if (!mounted) return
+
+        const productPerformance = (productsRes || []).map((p: any) => {
+          const productSales = (salesRes || []).filter((s: any) => s.product_id === p.id)
+          const revenue = productSales.reduce((sum: number, s: any) => sum + Number(s.total || s.amount || 0), 0)
+          return {
+            category: p.name || 'Unknown',
+            satisfaction: Math.min(95, Math.max(50, 80 - (p.price || 0) / 10)),
+            revenue: Math.round(revenue / 1000),
+          }
+        }).slice(0, 5)
+        
+        setMarketSurvey(productPerformance)
+      } catch (e) {
+        console.error('Failed to load market survey data', e)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
   const totalCustomers = kpis.totalCustomers ?? 0
   const totalRevenue = kpis.totalRevenue ?? 0
   const totalSales = kpis.totalSales ?? 0
@@ -90,14 +121,6 @@ export default function DashboardPage() {
     month: 'This Month',
     year: 'This Year',
   }
-
-  const marketSurvey = [
-    { category: 'Product A', satisfaction: 92, revenue: 45 },
-    { category: 'Product B', satisfaction: 78, revenue: 32 },
-    { category: 'Product C', satisfaction: 65, revenue: 28 },
-    { category: 'Product D', satisfaction: 88, revenue: 52 },
-    { category: 'Product E', satisfaction: 71, revenue: 19 },
-  ]
 
   return (
     <div className={styles.page}>
@@ -335,13 +358,13 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
-                  data={salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]}
+                  data={salesByRegion.length > 0 ? salesByRegion : []}
                   cx="50%" cy="50%"
                   innerRadius={40} outerRadius={70}
                   dataKey="value"
                   paddingAngle={4}
                 >
-                  {(salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]).map((_, i) => (
+                  {(salesByRegion.length > 0 ? salesByRegion : []).map((_, i) => (
                     <Cell key={i} fill={SURVEY_COLORS[i % SURVEY_COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
@@ -352,7 +375,7 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className={styles.regionLegend}>
-              {(salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]).map((r: any, i: number) => (
+              {(salesByRegion.length > 0 ? salesByRegion : []).map((r: any, i: number) => (
                 <div key={r.name} className={styles.regionItem}>
                   <span className={styles.regionDot} style={{ background: SURVEY_COLORS[i % SURVEY_COLORS.length] }} />
                   <span className={styles.regionName}>{r.name}</span>

@@ -1,15 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Download, RefreshCw, ArrowUpRight, MapPin, Zap } from 'lucide-react'
+import api from '@/services/api'
 import styles from '../analytics/AnalyticsPage.module.css'
-
-const recs = [
-  { title: 'Upsell Premium Plan', desc: '234 customers match the profile for premium upgrade. Expected revenue lift: $12,400/month.', priority: 'High' },
-  { title: 'Re-engage Dormant Customers', desc: '890 customers have not purchased in 60+ days. A targeted email campaign is recommended.', priority: 'High' },
-  { title: 'Restock Widget B and D', desc: 'Based on demand trends, both items will be out of stock within 14 days.', priority: 'Medium' },
-  { title: 'Reduce Marketing Spend in Region West', desc: 'ROI in West region is 40% below average. Reallocate $8,000 to North region.', priority: 'Medium' },
-  { title: 'Launch Weekend Flash Sale', desc: 'Historical data shows 38% higher conversion on weekends. Consider a 48-hour promotion.', priority: 'Low' },
-  { title: 'Set Revenue Milestone Alert', desc: 'Revenue is tracking 8% above target. Set a $100k milestone notification.', priority: 'Low' },
-]
 
 const priorityStyle: Record<string, { bg: string; color: string; border: string }> = {
   High: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
@@ -17,19 +9,83 @@ const priorityStyle: Record<string, { bg: string; color: string; border: string 
   Low: { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
 }
 
-const kpis = [
-  { label: 'High Priority', value: '2', change: '', up: true, iconBg: '#fee2e2', iconColor: '#dc2626' },
-  { label: 'Medium Priority', value: '2', change: '', up: true, iconBg: '#fef3c7', iconColor: '#d97706' },
-  { label: 'Low Priority', value: '2', change: '', up: true, iconBg: '#dcfce7', iconColor: '#16a34a' },
-  { label: 'Est. Revenue Lift', value: '$21.4K', change: '+12.4%', up: true, iconBg: '#dbeafe', iconColor: '#2563eb' },
-  { label: 'Actions Taken', value: '3', change: '+1', up: true, iconBg: '#d1fae5', iconColor: '#059669' },
-  { label: 'Pending Actions', value: '3', change: '', up: true, iconBg: '#ede9fe', iconColor: '#7c3aed' },
-  { label: 'AI Confidence', value: '88%', change: '+2.1%', up: true, iconBg: '#dcfce7', iconColor: '#16a34a' },
-  { label: 'Last Updated', value: 'Today', change: '', up: true, iconBg: '#f3e8ff', iconColor: '#9333ea' },
-]
-
 export default function RecommendationsPage() {
   const [period, setPeriod] = useState('All Time')
+  const [recs, setRecs] = useState<any[]>([])
+  const [kpis, setKpis] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const [salesRes, customersRes, productsRes] = await Promise.all([
+          api.get('/sales').then(r => r.data).catch(() => []),
+          api.get('/customers').then(r => r.data).catch(() => []),
+          api.get('/products').then(r => r.data).catch(() => []),
+        ])
+        if (!mounted) return
+
+        const recommendations: any[] = []
+        const totalCustomers = (customersRes || []).length
+        const totalSales = (salesRes || []).length
+        const totalProducts = (productsRes || []).length
+        
+        if (totalSales > 0) {
+          recommendations.push({
+            title: 'Analyze Sales Performance',
+            desc: `You have ${totalSales} sales recorded. Review top-performing products and optimize marketing.`,
+            priority: 'High',
+          })
+        }
+        
+        if (totalCustomers > 0) {
+          recommendations.push({
+            title: 'Customer Engagement',
+            desc: `${totalCustomers} customers in database. Implement loyalty program to increase retention.`,
+            priority: 'High',
+          })
+        }
+        
+        if (totalProducts > 0) {
+          recommendations.push({
+            title: 'Product Portfolio Review',
+            desc: `${totalProducts} products available. Analyze performance metrics to identify top sellers.`,
+            priority: 'Medium',
+          })
+        }
+        
+        recommendations.push({
+          title: 'Data-Driven Decisions',
+          desc: 'Continue collecting and analyzing data to improve business insights and forecasting accuracy.',
+          priority: 'Medium',
+        })
+        
+        setRecs(recommendations)
+
+        const highPriority = recommendations.filter(r => r.priority === 'High').length
+        const mediumPriority = recommendations.filter(r => r.priority === 'Medium').length
+        const lowPriority = recommendations.filter(r => r.priority === 'Low').length
+        
+        setKpis([
+          { label: 'High Priority', value: String(highPriority), change: '', up: true, iconBg: '#fee2e2', iconColor: '#dc2626' },
+          { label: 'Medium Priority', value: String(mediumPriority), change: '', up: true, iconBg: '#fef3c7', iconColor: '#d97706' },
+          { label: 'Low Priority', value: String(lowPriority), change: '', up: true, iconBg: '#dcfce7', iconColor: '#16a34a' },
+          { label: 'Total Recommendations', value: String(recommendations.length), change: '', up: true, iconBg: '#dbeafe', iconColor: '#2563eb' },
+          { label: 'Revenue Impact', value: '$0', change: '', up: true, iconBg: '#d1fae5', iconColor: '#059669' },
+          { label: 'Actions Taken', value: '0', change: '', up: true, iconBg: '#ede9fe', iconColor: '#7c3aed' },
+          { label: 'Pending Actions', value: String(recommendations.length), change: '', up: true, iconBg: '#dcfce7', iconColor: '#16a34a' },
+          { label: 'AI Confidence', value: '0%', change: '', up: true, iconBg: '#f3e8ff', iconColor: '#9333ea' },
+        ])
+      } catch (e) {
+        console.error('Failed to load recommendations', e)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
 
   return (
     <div className={styles.page}>
@@ -61,18 +117,22 @@ export default function RecommendationsPage() {
       </div>
 
       <div className={styles.kpiRow}>
-        {kpis.map(k => (
-          <div key={k.label} className={styles.kpiCard}>
-            <div className={styles.kpiIconWrap} style={{ background: k.iconBg, color: k.iconColor }}><Zap size={16} /></div>
-            <span className={styles.kpiLabel}>{k.label}</span>
-            <span className={styles.kpiValue}>{k.value}</span>
-            {k.change && (
-              <span className={`${styles.kpiChange} ${k.up ? styles.up : styles.down}`}>
-                <ArrowUpRight size={12} /> {k.change} vs last period
-              </span>
-            )}
-          </div>
-        ))}
+        {kpis.length === 0 && !loading ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem' }}>No recommendations available. Add business data to generate insights.</div>
+        ) : (
+          kpis.map(k => (
+            <div key={k.label} className={styles.kpiCard}>
+              <div className={styles.kpiIconWrap} style={{ background: k.iconBg, color: k.iconColor }}><Zap size={16} /></div>
+              <span className={styles.kpiLabel}>{k.label}</span>
+              <span className={styles.kpiValue}>{k.value}</span>
+              {k.change && (
+                <span className={`${styles.kpiChange} ${k.up ? styles.up : styles.down}`}>
+                  <ArrowUpRight size={12} /> {k.change} vs last period
+                </span>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1rem' }}>

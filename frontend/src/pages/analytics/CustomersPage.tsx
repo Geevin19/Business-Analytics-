@@ -1,42 +1,93 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Users, UserPlus, RefreshCw as RefreshCwIcon, UserMinus, Search, Download, RefreshCw, MoreHorizontal, ArrowUpRight, MapPin } from 'lucide-react'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import api from '@/services/api'
 import styles from './AnalyticsPage.module.css'
-
-const growth = [
-  { month: 'Jan', total: 8200, returning: 5000 }, { month: 'Feb', total: 8800, returning: 5400 },
-  { month: 'Mar', total: 9400, returning: 5800 }, { month: 'Apr', total: 9900, returning: 6100 },
-  { month: 'May', total: 10500, returning: 6500 }, { month: 'Jun', total: 11000, returning: 6800 },
-  { month: 'Jul', total: 11400, returning: 7000 }, { month: 'Aug', total: 11800, returning: 7300 },
-  { month: 'Sep', total: 12100, returning: 7500 }, { month: 'Oct', total: 12300, returning: 7600 },
-  { month: 'Nov', total: 12420, returning: 7700 }, { month: 'Dec', total: 12491, returning: 7750 },
-]
-
-const byRegion = [
-  { region: 'North', value: 4200 },
-  { region: 'South', value: 3100 },
-  { region: 'East', value: 2800 },
-  { region: 'West', value: 1900 },
-  { region: 'Capital', value: 491 },
-]
 
 const axis = { axisLine: false as const, tickLine: false as const }
 const ttip = { contentStyle: { borderRadius: 8, fontSize: 12, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' } }
 
-const kpis = [
-  { label: 'Total Customers', value: '1.48K', change: '+8.2%', up: true, icon: <Users size={16} />, iconBg: '#dcfce7', iconColor: '#16a34a' },
-  { label: 'New Customers', value: '1.30K', change: '+3.1%', up: true, icon: <UserPlus size={16} />, iconBg: '#dbeafe', iconColor: '#2563eb' },
-  { label: 'Avg. Order Value', value: '$674.54', change: '-2.3%', up: false, icon: <UserMinus size={16} />, iconBg: '#f3e8ff', iconColor: '#9333ea' },
-  { label: 'Total Revenue', value: '$455.0K', change: '+12.4%', up: true, icon: <Users size={16} />, iconBg: '#dcfce7', iconColor: '#16a34a' },
-  { label: 'Orders', value: '720', change: '+5.7%', up: true, icon: <Users size={16} />, iconBg: '#ffedd5', iconColor: '#f97316' },
-  { label: 'Monthly Recurring', value: '$3.10K', change: '+18.9%', up: true, icon: <RefreshCwIcon size={16} />, iconBg: '#d1fae5', iconColor: '#059669' },
-  { label: 'Total Transactions', value: '2.38K', change: '+6.4%', up: true, icon: <Users size={16} />, iconBg: '#ede9fe', iconColor: '#7c3aed' },
-  { label: 'Churn Rate', value: '12.0%', change: '-2.1%', up: true, icon: <UserMinus size={16} />, iconBg: '#fee2e2', iconColor: '#dc2626' },
-]
-
 export default function CustomersPage() {
   const [period, setPeriod] = useState('All Time')
   const [chartType, setChartType] = useState('Area')
+  const [growth, setGrowth] = useState<any[]>([])
+  const [byRegion, setByRegion] = useState<any[]>([])
+  const [kpis, setKpis] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const [customersRes, summaryRes] = await Promise.all([
+          api.get('/customers').then(r => r.data).catch(() => []),
+          api.get('/customers/summary').then(r => r.data).catch(() => null),
+        ])
+        if (!mounted) return
+
+        // Build monthly growth data from customers
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        const monthMap: Record<string, { total: number; returning: number }> = {}
+        const now = new Date()
+        const currentYear = now.getFullYear()
+        
+        ;(customersRes || []).forEach((c: any) => {
+          if (c.created_at) {
+            const d = new Date(c.created_at)
+            if (d.getFullYear() === currentYear) {
+              const m = d.toLocaleString('en-US', { month: 'short' })
+              if (!monthMap[m]) monthMap[m] = { total: 0, returning: 0 }
+              monthMap[m].total += 1
+              // Estimate returning customers as ~65% of total for current data
+              monthMap[m].returning += 1
+            }
+          }
+        })
+        
+        // Calculate cumulative totals
+        let cumulative = 0
+        let returningCumulative = 0
+        const growthData = monthNames.map(m => {
+          cumulative += monthMap[m]?.total || 0
+          returningCumulative += Math.round((monthMap[m]?.total || 0) * 0.65)
+          return {
+            month: m,
+            total: cumulative,
+            returning: returningCumulative,
+          }
+        })
+        setGrowth(growthData)
+
+        // Regional data from summary
+        if (summaryRes?.bySegment) {
+          setByRegion(summaryRes.bySegment.map((s: any) => ({
+            region: s.name,
+            value: s.value,
+          })))
+        }
+
+        // KPIs
+        const totalCustomers = customersRes?.length || 0
+        const newThisMonth = summaryRes?.newThisMonth || 0
+        setKpis([
+          { label: 'Total Customers', value: totalCustomers.toLocaleString(), change: '', up: true, icon: <Users size={16} />, iconBg: '#dcfce7', iconColor: '#16a34a' },
+          { label: 'New Customers', value: newThisMonth.toLocaleString(), change: '', up: true, icon: <UserPlus size={16} />, iconBg: '#dbeafe', iconColor: '#2563eb' },
+          { label: 'Avg. Order Value', value: '$0', change: '', up: false, icon: <UserMinus size={16} />, iconBg: '#f3e8ff', iconColor: '#9333ea' },
+          { label: 'Total Revenue', value: '$0', change: '', up: true, icon: <Users size={16} />, iconBg: '#dcfce7', iconColor: '#16a34a' },
+          { label: 'Orders', value: '0', change: '', up: true, icon: <Users size={16} />, iconBg: '#ffedd5', iconColor: '#f97316' },
+          { label: 'Monthly Recurring', value: '$0', change: '', up: true, icon: <RefreshCwIcon size={16} />, iconBg: '#d1fae5', iconColor: '#059669' },
+          { label: 'Total Transactions', value: totalCustomers.toLocaleString(), change: '', up: true, icon: <Users size={16} />, iconBg: '#ede9fe', iconColor: '#7c3aed' },
+          { label: 'Churn Rate', value: '0%', change: '', up: true, icon: <UserMinus size={16} />, iconBg: '#fee2e2', iconColor: '#dc2626' },
+        ])
+      } catch (e) {
+        console.error('Failed to load customers data', e)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
 
   return (
     <div className={styles.page}>
@@ -74,16 +125,20 @@ export default function CustomersPage() {
       </div>
 
       <div className={styles.kpiRow}>
-        {kpis.map(k => (
-          <div key={k.label} className={styles.kpiCard}>
-            <div className={styles.kpiIconWrap} style={{ background: k.iconBg, color: k.iconColor }}>{k.icon}</div>
-            <span className={styles.kpiLabel}>{k.label}</span>
-            <span className={styles.kpiValue}>{k.value}</span>
-            <span className={`${styles.kpiChange} ${k.up ? styles.up : styles.down}`}>
-              <ArrowUpRight size={12} /> {k.change} vs last period
-            </span>
-          </div>
-        ))}
+        {kpis.length === 0 && !loading ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem' }}>No customer data available yet. Add customers to see analytics.</div>
+        ) : (
+          kpis.map(k => (
+            <div key={k.label} className={styles.kpiCard}>
+              <div className={styles.kpiIconWrap} style={{ background: k.iconBg, color: k.iconColor }}>{k.icon}</div>
+              <span className={styles.kpiLabel}>{k.label}</span>
+              <span className={styles.kpiValue}>{k.value}</span>
+              {k.change && <span className={`${styles.kpiChange} ${k.up ? styles.up : styles.down}`}>
+                <ArrowUpRight size={12} /> {k.change} vs last period
+              </span>}
+            </div>
+          ))
+        )}
       </div>
 
       <div className={styles.mainContent}>
@@ -99,7 +154,7 @@ export default function CustomersPage() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={growth}>
+            <AreaChart data={growth.length > 0 ? growth : []}>
               <defs>
                 <linearGradient id="cg1" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
@@ -123,7 +178,7 @@ export default function CustomersPage() {
         <div className={styles.chartCard}>
           <div className={styles.cardHeader}><h3>Regional Distribution</h3><button className={styles.moreBtn}><MoreHorizontal size={16} /></button></div>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={byRegion} layout="vertical">
+            <BarChart data={byRegion.length > 0 ? byRegion : []} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
               <YAxis dataKey="region" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={55} {...axis} />
