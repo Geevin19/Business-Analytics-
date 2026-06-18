@@ -9,7 +9,6 @@ import {
 } from 'recharts'
 import { useEffect, useState } from 'react'
 import { getAnalyticsOverview, getDashboard } from '@/services/admin.service'
-import { adminKpis as mockKpis, recentActivities as mockActivities } from '@/data/adminMockData'
 import s from '@/components/admin/admin.module.css'
 
 const COLORS = ['#166D16', '#06b6d4', '#10b981', '#f59e0b']
@@ -17,8 +16,8 @@ const COLORS = ['#166D16', '#06b6d4', '#10b981', '#f59e0b']
 export default function AdminHomePage() {
   const [monthlyGrowth, setMonthlyGrowth] = useState<any[]>([])
   const [regionalPerformance, setRegionalPerformance] = useState<any[]>([])
-  const [recentActivities, setRecentActivities] = useState<any[]>(mockActivities)
-  const [kpis, setKpis] = useState<any>(mockKpis)
+  const [recentActivities, setRecentActivities] = useState<any[]>([])
+  const [kpis, setKpis] = useState<any>({})
 
   useEffect(() => {
     let mounted = true
@@ -27,7 +26,7 @@ export default function AdminHomePage() {
       if (a) {
         setMonthlyGrowth(a.monthlyGrowth || [])
         setRegionalPerformance(a.regionalPerformance || [])
-        setRecentActivities(a.recentActivities?.map((r: any) => ({ id: r.created_at, text: `${r.user_email}: ${r.action}`, time: new Date(r.created_at).toLocaleString() })) || mockActivities)
+        setRecentActivities(a.recentActivities?.map((r: any) => ({ id: r.created_at, text: `${r.user_email}: ${r.action}`, time: new Date(r.created_at).toLocaleString() })) || [])
       }
       if (db) {
         setKpis(db)
@@ -39,7 +38,7 @@ export default function AdminHomePage() {
   return (
     <AdminPageShell title="Admin Dashboard" subtitle="Full administrative control and business overview">
       <div className={s.statsGrid}>
-        <StatCard label="Revenue (K)" value={kpis.totalRevenue ?? '$0'} trendUp icon={<DollarSign size={20} />} />
+        <StatCard label="Revenue (K)" value={kpis.totalRevenue ? '$' + Math.round(kpis.totalRevenue / 1000) + 'K' : '$0'} trendUp icon={<DollarSign size={20} />} />
         <StatCard label="Total Sales" value={kpis.totalSales ?? 0} trendUp icon={<TrendingUp size={20} />} />
         <StatCard label="Total Customers" value={kpis.totalCustomers ?? 0} trendUp icon={<Users size={20} />} />
         <StatCard label="Total Users" value={kpis.totalUsers ?? 0} trendUp icon={<UserCircle size={20} />} />
@@ -79,6 +78,7 @@ export default function AdminHomePage() {
         <div className={s.card}>
           <div className={s.cardTitle}>Recent Activities</div>
           <div className={s.activityList}>
+            {recentActivities.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No recent activities</p>}
             {recentActivities.map((a: any) => (
               <div key={a.id} className={s.activityItem}>
                 <span>{a.text}</span>

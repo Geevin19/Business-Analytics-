@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Upload, FileText, Database, TrendingUp, TrendingDown,
   Activity, BarChart3, Trash2, Table, AlertCircle,
@@ -66,6 +67,7 @@ function getFileIcon(type: string) {
 
 /* ── Component ── */
 export default function UserDataPage() {
+  const [searchParams] = useSearchParams()
   const [datasets, setDatasets] = useState<UploadedDataset[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null)
@@ -79,7 +81,7 @@ export default function UserDataPage() {
   const loadDatasets = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await api.get('/api/trend/datasets')
+      const res = await api.get('/trend/datasets')
       setDatasets(res.data)
     } catch (err) {
       console.error('Failed to load datasets', err)
@@ -90,9 +92,26 @@ export default function UserDataPage() {
 
   useEffect(() => { loadDatasets() }, [loadDatasets])
 
+  // Auto-select dataset from URL query param (e.g. ?dataset=filename.csv)
+  useEffect(() => {
+    const datasetName = searchParams.get('dataset')
+    if (datasetName && datasets.length > 0) {
+      const match = datasets.find(d => d.fileName === datasetName)
+      if (match && match.id !== selectedId) {
+        setSelectedId(match.id)
+        setSelectedColumn(match.numericColumns[0] || null)
+      }
+    }
+  }, [searchParams, datasets, selectedId])
+
   const selectedDataset = datasets.find(d => d.id === selectedId)
   const activeColumn = selectedColumn || selectedDataset?.numericColumns[0] || null
   const activeAnalysis = activeColumn && selectedDataset?.analysis[activeColumn] || null
+
+  // Dispatch custom event to notify sidebar of changes
+  const notifyDatasetsChanged = () => {
+    window.dispatchEvent(new CustomEvent('datasets-changed'))
+  }
 
   // ── Upload handlers ──
   const handleFileUpload = async (file: File) => {
@@ -101,12 +120,13 @@ export default function UserDataPage() {
 
     try {
       setUploading(true)
-      const res = await api.post('/api/trend/upload', formData, {
+      const res = await api.post('/trend/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       setDatasets(prev => [res.data, ...prev])
       setSelectedId(res.data.id)
       setSelectedColumn(res.data.numericColumns[0] || null)
+      notifyDatasetsChanged()
     } catch (err) {
       console.error('Upload failed', err)
     } finally {
@@ -121,7 +141,7 @@ export default function UserDataPage() {
       setUploading(true)
       const isJson = pasteContent.trim().startsWith('[') || pasteContent.trim().startsWith('{')
       const type = isJson ? 'json' : 'csv'
-      const res = await api.post('/api/trend/upload-data', {
+      const res = await api.post('/trend/upload-data', {
         content: pasteContent,
         fileName: `pasted_${Date.now()}.${type}`,
         fileType: type,
@@ -130,6 +150,7 @@ export default function UserDataPage() {
       setSelectedId(res.data.id)
       setSelectedColumn(res.data.numericColumns[0] || null)
       setPasteContent('')
+      notifyDatasetsChanged()
     } catch (err) {
       console.error('Upload failed', err)
     } finally {
@@ -140,12 +161,13 @@ export default function UserDataPage() {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await api.delete(`/api/trend/datasets/${id}`)
+      await api.delete(`/trend/datasets/${id}`)
       setDatasets(prev => prev.filter(d => d.id !== id))
       if (selectedId === id) {
         setSelectedId(null)
         setSelectedColumn(null)
       }
+      notifyDatasetsChanged()
     } catch (err) {
       console.error('Delete failed', err)
     }
@@ -153,10 +175,11 @@ export default function UserDataPage() {
 
   const handleClearAll = async () => {
     try {
-      await api.delete('/api/trend/datasets')
+      await api.delete('/trend/datasets')
       setDatasets([])
       setSelectedId(null)
       setSelectedColumn(null)
+      notifyDatasetsChanged()
     } catch (err) {
       console.error('Clear failed', err)
     }
@@ -224,12 +247,12 @@ export default function UserDataPage() {
           >
             <div className={styles.dropIcon}><Upload size={36} strokeWidth={1.5} /></div>
             <div className={styles.dropText}>Drop your file here or click to browse</div>
-            <div className={styles.dropHint}>Supports CSV, JSON, TXT, TSV - up to 10MB</div>
+            <div className={styles.dropHint}>Supports CSV, JSON, TXT, TSV, Excel (.xlsx, .xls) - up to 10MB</div>
             <input
               ref={fileInputRef}
               type="file"
               className={styles.fileInput}
-              accept=".csv,.json,.txt,.tsv,.tab"
+              accept=".csv,.json,.txt,.tsv,.tab,.xlsx,.xls"
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (file) handleFileUpload(file)

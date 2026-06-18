@@ -1,22 +1,26 @@
 import { useState, useEffect } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import { useToast } from '@/components/admin/useToast'
-import { mockNotifications } from '@/data/adminMockData'
 import { getNotifications, markNotificationRead } from '@/services/admin.service'
 import { Bell, Plus } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
 export default function AdminNotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const [notifications, setNotifications] = useState<any[]>([])
   const { show, Toast } = useToast()
 
-  useEffect(() => { let mounted = true; getNotifications().then(d => { if (mounted && d) setNotifications(d) }).catch(() => {}); return () => { mounted = false } }, [])
+  useEffect(() => {
+    let mounted = true
+    getNotifications().then(d => { if (mounted && d) setNotifications(d) }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
 
   return (
     <AdminPageShell title="Notification Center" subtitle="Create, send and manage system notifications"
       actions={<button className={s.btnPrimary} onClick={() => show('Create notification form')}><Plus size={15} /> Create</button>}>
       <div className={s.activityList}>
-        {notifications.map(n => (
+        {notifications.length === 0 && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No notifications yet</p>}
+        {notifications.map((n: any) => (
           <div key={n.id} className={s.card} style={{ opacity: n.read ? 0.75 : 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
               <div>
@@ -27,7 +31,7 @@ export default function AdminNotificationsPage() {
                   {!n.read && <span className={`${s.badge} ${s.badgeWarning}`}>Unread</span>}
                 </div>
                 <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>{n.message}</p>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>{n.createdAt}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>{n.createdAt || n.created_at}</span>
               </div>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 {!n.read && (

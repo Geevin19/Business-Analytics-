@@ -1,63 +1,138 @@
-import PageShell from '@/components/ui/PageShell'
-import StatCard from '@/components/ui/StatCard'
-import { Users, UserPlus, RefreshCw, UserMinus } from 'lucide-react'
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import s from '@/styles/shared.module.css'
-
-const axis = { axisLine: false as const, tickLine: false as const }
-const ttip = { contentStyle: { borderRadius: 8, fontSize: 12 } }
+import { useState } from 'react'
+import { Users, UserPlus, RefreshCw as RefreshCwIcon, UserMinus, Search, Download, RefreshCw, MoreHorizontal, ArrowUpRight, MapPin } from 'lucide-react'
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import styles from './AnalyticsPage.module.css'
 
 const growth = [
-  { month: 'Jan', customers: 8200 }, { month: 'Feb', customers: 8800 }, { month: 'Mar', customers: 9400 },
-  { month: 'Apr', customers: 9900 }, { month: 'May', customers: 10500 }, { month: 'Jun', customers: 11000 },
-  { month: 'Jul', customers: 11400 }, { month: 'Aug', customers: 11800 }, { month: 'Sep', customers: 12100 },
-  { month: 'Oct', customers: 12300 }, { month: 'Nov', customers: 12420 }, { month: 'Dec', customers: 12491 },
+  { month: 'Jan', total: 8200, returning: 5000 }, { month: 'Feb', total: 8800, returning: 5400 },
+  { month: 'Mar', total: 9400, returning: 5800 }, { month: 'Apr', total: 9900, returning: 6100 },
+  { month: 'May', total: 10500, returning: 6500 }, { month: 'Jun', total: 11000, returning: 6800 },
+  { month: 'Jul', total: 11400, returning: 7000 }, { month: 'Aug', total: 11800, returning: 7300 },
+  { month: 'Sep', total: 12100, returning: 7500 }, { month: 'Oct', total: 12300, returning: 7600 },
+  { month: 'Nov', total: 12420, returning: 7700 }, { month: 'Dec', total: 12491, returning: 7750 },
 ]
 
-const segments = [
-  { name: 'Premium', value: 15 }, { name: 'Regular', value: 55 },
-  { name: 'New', value: 20 }, { name: 'Churned', value: 10 },
+const byRegion = [
+  { region: 'North', value: 4200 },
+  { region: 'South', value: 3100 },
+  { region: 'East', value: 2800 },
+  { region: 'West', value: 1900 },
+  { region: 'Capital', value: 491 },
 ]
 
-const COLORS = ['#16a34a', '#22c55e', '#10b981', '#15803d']
+const axis = { axisLine: false as const, tickLine: false as const }
+const ttip = { contentStyle: { borderRadius: 8, fontSize: 12, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' } }
+
+const kpis = [
+  { label: 'Total Customers', value: '1.48K', change: '+8.2%', up: true, icon: <Users size={16} />, iconBg: '#dcfce7', iconColor: '#16a34a' },
+  { label: 'New Customers', value: '1.30K', change: '+3.1%', up: true, icon: <UserPlus size={16} />, iconBg: '#dbeafe', iconColor: '#2563eb' },
+  { label: 'Avg. Order Value', value: '$674.54', change: '-2.3%', up: false, icon: <UserMinus size={16} />, iconBg: '#f3e8ff', iconColor: '#9333ea' },
+  { label: 'Total Revenue', value: '$455.0K', change: '+12.4%', up: true, icon: <Users size={16} />, iconBg: '#dcfce7', iconColor: '#16a34a' },
+  { label: 'Orders', value: '720', change: '+5.7%', up: true, icon: <Users size={16} />, iconBg: '#ffedd5', iconColor: '#f97316' },
+  { label: 'Monthly Recurring', value: '$3.10K', change: '+18.9%', up: true, icon: <RefreshCwIcon size={16} />, iconBg: '#d1fae5', iconColor: '#059669' },
+  { label: 'Total Transactions', value: '2.38K', change: '+6.4%', up: true, icon: <Users size={16} />, iconBg: '#ede9fe', iconColor: '#7c3aed' },
+  { label: 'Churn Rate', value: '12.0%', change: '-2.1%', up: true, icon: <UserMinus size={16} />, iconBg: '#fee2e2', iconColor: '#dc2626' },
+]
 
 export default function CustomersPage() {
+  const [period, setPeriod] = useState('All Time')
+  const [chartType, setChartType] = useState('Area')
+
   return (
-    <PageShell title="Customer Analytics" subtitle="Growth, segmentation, retention and purchase behavior.">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem' }}>
-        <StatCard label="Total Customers" value="12,491" trend="5% vs last month" trendUp icon={<Users size={20} strokeWidth={1.8} />} />
-        <StatCard label="New This Month" value="342" trend="9% vs last month" trendUp icon={<UserPlus size={20} strokeWidth={1.8} />} />
-        <StatCard label="Retention Rate" value="84%" trend="2% vs last month" trendUp icon={<RefreshCw size={20} strokeWidth={1.8} />} />
-        <StatCard label="Churn Rate" value="3.2%" trend="0.5% increase" trendUp={false} icon={<UserMinus size={20} strokeWidth={1.8} />} />
+    <div className={styles.page}>
+      <div className={styles.headerTop}>
+        <div>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>Analysis: Customers</h1>
+            <span className={styles.growthBadge}>+8.2%</span>
+          </div>
+          <p className={styles.subtitle}>CRM Module · Jan 2025 – Dec 2025</p>
+        </div>
+        <div className={styles.headerActions}>
+          <div className={styles.searchWrap}><Search size={14} className={styles.searchIcon} /><input placeholder="Search data..." className={styles.searchInput} /></div>
+          <button className={styles.actionBtn}><RefreshCw size={15} /> Refresh</button>
+          <button className={styles.actionBtnPrimary}><Download size={15} /> Export</button>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-        <div className={s.card}>
-          <div className={s.cardTitle}>Customer Growth</div>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={growth}>
+      <div className={styles.filterToolbar}>
+        <div className={styles.filterTabs}>
+          {['All Time','Today','Week','Month','Year'].map(p => (
+            <button key={p} className={`${styles.filterTab} ${period === p ? styles.active : ''}`} onClick={() => setPeriod(p)}>{p}</button>
+          ))}
+        </div>
+        <div className={styles.filterActions}>
+          <div className={styles.locationLabel}><MapPin size={12} /> PLACE</div>
+          <select className={styles.filterSelect}><option>All Locations</option></select>
+          <div className={styles.chartGroup}>
+            <span className={styles.chartLabel}>CHART</span>
+            {['Area','Bar','Line','Pie'].map(c => (
+              <button key={c} className={`${styles.chartToggleBtn} ${chartType === c ? styles.chartActive : ''}`} onClick={() => setChartType(c)}>{c}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.kpiRow}>
+        {kpis.map(k => (
+          <div key={k.label} className={styles.kpiCard}>
+            <div className={styles.kpiIconWrap} style={{ background: k.iconBg, color: k.iconColor }}>{k.icon}</div>
+            <span className={styles.kpiLabel}>{k.label}</span>
+            <span className={styles.kpiValue}>{k.value}</span>
+            <span className={`${styles.kpiChange} ${k.up ? styles.up : styles.down}`}>
+              <ArrowUpRight size={12} /> {k.change} vs last period
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.mainContent}>
+        <div className={styles.chartCard}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h3>Analysis: Customers — Area Chart</h3>
+              <p className={styles.cardSub}>Showing {period.toLowerCase()} data</p>
+            </div>
+            <div className={styles.cardLegend}>
+              <span className={styles.legendDot} style={{ background: '#16a34a' }} /> Total
+              <span className={styles.legendDot} style={{ background: '#22c55e' }} /> Returning
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={growth}>
+              <defs>
+                <linearGradient id="cg1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="cg2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
-              <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} {...axis} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
               <Tooltip {...ttip} />
-              <Line type="monotone" dataKey="customers" stroke="var(--primary)" strokeWidth={2} dot={false} />
-            </LineChart>
+              <Area type="monotone" dataKey="total" stroke="#16a34a" fill="url(#cg1)" strokeWidth={2} name="Total" />
+              <Area type="monotone" dataKey="returning" stroke="#22c55e" fill="url(#cg2)" strokeWidth={2} strokeDasharray="5 3" name="Returning" />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        <div className={s.card}>
-          <div className={s.cardTitle}>Segmentation</div>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={segments} cx="50%" cy="45%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={3}>
-                {segments.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip {...ttip} formatter={(v: number) => `${v}%`} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
-            </PieChart>
+        <div className={styles.chartCard}>
+          <div className={styles.cardHeader}><h3>Regional Distribution</h3><button className={styles.moreBtn}><MoreHorizontal size={16} /></button></div>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={byRegion} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <YAxis dataKey="region" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={55} {...axis} />
+              <Tooltip {...ttip} />
+              <Bar dataKey="value" fill="#16a34a" radius={[0, 4, 4, 0]} maxBarSize={20} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-    </PageShell>
+    </div>
   )
 }

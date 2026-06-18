@@ -1,4 +1,5 @@
 import { parse } from 'csv-parse/sync'
+import * as XLSX from 'xlsx'
 
 /**
  * Mathematical trend analysis service
@@ -28,6 +29,7 @@ export interface TrendResult {
 
 export interface UploadedData {
   id: string
+  userId: string
   fileName: string
   fileType: string
   uploadedAt: string
@@ -38,7 +40,15 @@ export interface UploadedData {
   rawPreview: Record<string, any>[]
 }
 
-const uploadedDatasets: UploadedData[] = []
+// Store datasets per user: Map<userId, UploadedData[]>
+const userDatasets = new Map<string, UploadedData[]>()
+
+function getUserDatasets(userId: string): UploadedData[] {
+  if (!userDatasets.has(userId)) {
+    userDatasets.set(userId, [])
+  }
+  return userDatasets.get(userId)!
+}
 
 function mean(arr: number[]): number {
   return arr.reduce((s, v) => s + v, 0) / arr.length
@@ -229,12 +239,44 @@ function parseText(content: string): Record<string, any>[] {
   return records
 }
 
+function parseExcel(buffer: Buffer): Record<string, any>[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer' })
+  const sheetName = workbook.SheetNames[0]
+  if (!sheetName) return []
+  const sheet = workbook.Sheets[sheetName]
+  const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' })
+  return json
+}
+
+/** Parse a value to number, handling currency, commas, percentages, etc. */
+function parseNumericValue(val: any): number | null {
+  if (val === null || val === undefined || val === '') return null
+  if (typeof val === 'number') return isNaN(val) ? null : val
+
+  let str = String(val).trim()
+
+  // Remove common non-numeric prefixes/suffixes
+  str = str.replace(/^[$€£¥₹\s]+/, '')   // leading currency symbols
+  str = str.replace(/[%\s]+$/, '')        // trailing percent sign
+  str = str.replace(/,/g, '')             // thousands separator commas
+
+  // Handle parentheses for negative numbers: (1,234) → -1234
+  if (/^\(.*\)$/.test(str)) {
+    str = '-' + str.slice(1, -1)
+  }
+
+  const num = Number(str)
+  return isNaN(num) ? null : num
+}
+
 function detectNumericColumns(records: Record<string, any>[]): string[] {
   if (records.length === 0) return []
   const numericCols: string[] = []
   Object.keys(records[0]).forEach(col => {
-    const nums = records.map(r => Number(r[col])).filter(n => !isNaN(n))
-    if (nums.length > 0 && nums.length >= records.length * 0.7) {
+    const parsed = records.map(r => parseNumericValue(r[col]))
+    const nums = parsed.filter((n): n is number => n !== null)
+    // Accept column if at least 1 value parsed as number and >= 20% of values are numeric
+    if (nums.length > 0 && (nums.length >= records.length * 0.2 || nums.length >= 3)) {
       numericCols.push(col)
     }
   })
@@ -259,10 +301,12 @@ function extractLabels(records: Record<string, any>[]): string[] {
 }
 
 export function processUpload(
+  userId: string,
   id: string,
   fileName: string,
   fileType: string,
-  content: string
+  content: string,
+  buffer?: Buffer
 ): UploadedData {
   let records: Record<string, any>[]
 
@@ -270,6 +314,8 @@ export function processUpload(
     records = parseCSV(content)
   } else if (fileType === 'json') {
     records = parseJSON(content)
+  } else if (fileType === 'xlsx' || fileType === 'xls') {
+    records = buffer ? parseExcel(buffer) : parseText(content)
   } else {
     records = parseText(content)
   }
@@ -280,7 +326,7 @@ export function processUpload(
 
   const analysis: Record<string, TrendResult> = {}
   numericColumns.forEach(col => {
-    const values = records.map(r => Number(r[col])).filter(n => !isNaN(n))
+    const values = records.map(r => parseNumericValue(r[col])).filter((n): n is number => n !== null)
     if (values.length > 1) {
       analysis[col] = analyzeColumn(values, labels.slice(0, values.length))
     }
@@ -288,6 +334,7 @@ export function processUpload(
 
   const uploaded: UploadedData = {
     id,
+    userId,
     fileName,
     fileType,
     uploadedAt: new Date().toISOString(),
@@ -298,27 +345,30 @@ export function processUpload(
     rawPreview: records.slice(0, 50),
   }
 
-  uploadedDatasets.unshift(uploaded)
-  if (uploadedDatasets.length > 50) uploadedDatasets.pop()
+  const datasets = getUserDatasets(userId)
+  datasets.unshift(uploaded)
+  if (datasets.length > 50) datasets.pop()
 
   return uploaded
 }
 
-export function getAllDatasets(): UploadedData[] {
-  return uploadedDatasets
+export function getAllDatasets(userId: string): UploadedData[] {
+  return getUserDatasets(userId)
 }
 
-export function getDatasetById(id: string): UploadedData | undefined {
-  return uploadedDatasets.find(d => d.id === id)
+export function getDatasetById(userId: string, id: string): UploadedData | undefined {
+  return getUserDatasets(userId).find(d => d.id === id)
 }
 
-export function deleteDataset(id: string): boolean {
-  const idx = uploadedDatasets.findIndex(d => d.id === id)
+export function deleteDataset(userId: string, id: string): boolean {
+  const datasets = getUserDatasets(userId)
+  const idx = datasets.findIndex(d => d.id === id)
   if (idx === -1) return false
-  uploadedDatasets.splice(idx, 1)
+  datasets.splice(idx, 1)
   return true
 }
 
-export function clearAllDatasets(): void {
-  uploadedDatasets.length = 0
+export function clearAllDatasets(userId: string): void {
+  const datasets = getUserDatasets(userId)
+  datasets.length = 0
 }

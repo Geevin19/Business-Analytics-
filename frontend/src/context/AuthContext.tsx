@@ -1,129 +1,137 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { Session, User } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-
-const ADMIN_EMAIL = 'geevinrs@gmail.com'
+import type { User } from '@supabase/supabase-js'
 
 interface Profile {
-  id: string
   name: string
-  role: 'ADMIN' | 'MANAGER' | 'USER'
+  role: string
+  [key: string]: any
 }
 
 interface AuthContextType {
   user: User | null
   profile: Profile | null
-  session: Session | null
-  login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
-  resendVerification: (email: string) => Promise<void>
-  logout: () => Promise<void>
   isAuthenticated: boolean
   isAdmin: boolean
   loading: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (name: string, email: string, password: string) => Promise<{ verificationLink?: string } | void>
+  logout: () => Promise<void>
+  resendVerification: (email: string) => Promise<{ verificationLink?: string } | void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+const ADMIN_EMAIL = 'geevinrs@gmail.com'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const isAuthenticated = !!user
+  const isAdmin = user?.email === ADMIN_EMAIL
+
+  // Fetch profile from the profiles table
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      setProfile(data as Profile | null)
+    } catch {
+      setProfile(null)
+    }
+  }
+
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
+      const u = session?.user ?? null
+      setUser(u)
+      if (u) fetchProfile(u.id)
+      setLoading(false)
     })
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else { setProfile(null); setLoading(false) }
+      const u = session?.user ?? null
+      setUser(u)
+      if (u) fetchProfile(u.id)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data ?? null)
-    setLoading(false)
-  }
-
-  async function login(email: string, password: string) {
-    // Use backend login endpoint which returns a Supabase session object
-    const res = await fetch('/api/auth/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ message: 'Login failed' }))
-      // If the backend tells us the email needs verification, throw a specific error
-      if (body?.needsVerification) {
-        const err = new Error(body.message || 'Please verify your email.') as any
-        err.needsVerification = true
-        err.email = email
-        throw err
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      // Check if error is due to email not confirmed
+      if (error.message?.toLowerCase().includes('email not confirmed')) {
+        throw { message: 'Please verify your email before signing in.', needsVerification: true, email }
       }
-      throw new Error(body.message || 'Login failed')
+      throw { message: error.message }
     }
-    const body = await res.json()
-    if (!body?.session?.access_token) throw new Error('Login did not return a valid session')
-
-    // Initialize Supabase client with returned session
-    await supabase.auth.setSession({ access_token: body.session.access_token, refresh_token: body.session.refresh_token })
+    if (data.user) {
+      await fetchProfile(data.user.id)
+    }
   }
 
-  async function register(name: string, email: string, password: string) {
-    // Use backend registration endpoint which creates user via admin API
-    // (bypasses Supabase confirmation email and sends branded welcome via Gmail)
-    const res = await fetch('/api/auth/register', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+  const register = async (name: string, email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: `${window.location.origin}/auth/login`,
+      },
     })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ message: 'Registration failed' }))
-      throw new Error(body.message || 'Registration failed')
+    if (error) throw { message: error.message }
+
+    // If identity verification is used, a verification link might be needed
+    const result: { verificationLink?: string } = {}
+    if (data?.user?.identities?.length === 0) {
+      throw { message: 'An account with this email already exists.' }
     }
-    const body = await res.json()
-    // ✅ Do NOT auto-login — user must verify email first
-    return body
+
+    // Check if user needs manual verification (no email sent in dev)
+    if (data?.user?.confirmation_sent_at && !data?.session) {
+      // Try to get the verification link from the user metadata
+      // In development, Supabase may not send real emails
+      result.verificationLink = `${window.location.origin}/auth/login`
+    }
+
+    return result
   }
 
-  async function resendVerification(email: string) {
-    const res = await fetch('/api/auth/resend-verification', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ message: 'Failed to resend verification email' }))
-      throw new Error(body.message || 'Failed to resend verification email')
-    }
-    const body = await res.json()
-    return body
-  }
-
-  async function logout() {
+  const logout = async () => {
     await supabase.auth.signOut()
+    setUser(null)
+    setProfile(null)
   }
 
-  const isAdmin = user?.email === ADMIN_EMAIL || profile?.role === 'ADMIN'
+  const resendVerification = async (email: string) => {
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/login`,
+      },
+    })
+    if (error) throw { message: error.message }
+
+    // If no email was sent (development mode), provide a direct link
+    if (!data?.user) {
+      return { verificationLink: `${window.location.origin}/auth/login` }
+    }
+  }
 
   return (
     <AuthContext.Provider value={{
-      user, profile, session, login, register, resendVerification, logout,
-      isAuthenticated: !!session,
-      isAdmin,
-      loading,
+      user, profile, isAuthenticated, isAdmin, loading,
+      login, register, logout, resendVerification,
     }}>
       {children}
     </AuthContext.Provider>

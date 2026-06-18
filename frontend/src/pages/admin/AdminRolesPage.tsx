@@ -2,12 +2,12 @@ import { useState } from 'react'
 import AdminPageShell from '@/components/admin/AdminPageShell'
 import DataTable from '@/components/admin/DataTable'
 import { useToast } from '@/components/admin/useToast'
-import { mockRoles, Role } from '@/data/adminMockData'
+import { Role } from '@/data/adminMockData'
 import { Shield, Plus } from 'lucide-react'
 import s from '@/components/admin/admin.module.css'
 
 export default function AdminRolesPage() {
-  const [roles, setRoles] = useState(mockRoles)
+  const [roles, setRoles] = useState<Role[]>([])
   const { show, Toast } = useToast()
 
   const columns = [
@@ -20,7 +20,7 @@ export default function AdminRolesPage() {
     <AdminPageShell title="Roles & Permissions" subtitle="Create roles and manage access control"
       actions={<button className={s.btnPrimary} onClick={() => show('Create role form')}><Plus size={15} /> Create Role</button>}>
       <div className={s.grid3} style={{ marginBottom: '1.5rem' }}>
-        {['Super Admin', 'Admin', 'Manager', 'Analyst'].map(r => (
+        {['ADMIN', 'MANAGER', 'USER'].map(r => (
           <div key={r} className={s.card} style={{ textAlign: 'center' }}>
             <Shield size={24} style={{ color: 'var(--primary)', margin: '0 auto 0.5rem' }} />
             <div style={{ fontWeight: 600 }}>{r}</div>

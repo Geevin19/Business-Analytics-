@@ -12,10 +12,25 @@ function statusBadge(status: string) {
 }
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState(mockUsers)
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
     let mounted = true
-    getAdminUsers().then(data => { if (mounted) setUsers(data) }).catch(() => {})
+    getAdminUsers().then(data => {
+      if (mounted) {
+        // Map profiles from backend to AdminUser format
+        const mapped: AdminUser[] = (data || []).map((p: any) => ({
+          id: p.id,
+          name: p.name || p.email?.split('@')[0] || 'Unknown',
+          email: p.email || '',
+          phone: p.phone || '',
+          role: p.role || 'USER',
+          status: p.status || 'Active',
+          lastLogin: p.last_login || p.created_at || '',
+        }))
+        setUsers(mapped)
+      }
+    }).catch(() => {}).finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [])
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
@@ -55,7 +70,7 @@ export default function AdminUsersPage() {
         searchKeys={['name', 'email', 'role', 'id']}
         searchPlaceholder="Search users..."
         filters={[
-          { key: 'role', label: 'All Roles', options: ['Super Admin', 'Admin', 'Manager', 'Analyst'] },
+          { key: 'role', label: 'All Roles', options: ['ADMIN', 'MANAGER', 'USER'] },
           { key: 'status', label: 'All Status', options: ['Active', 'Inactive'] },
         ]}
         actions={(row: AdminUser) => (
@@ -80,8 +95,8 @@ export default function AdminUsersPage() {
               <div className={s.formGroup}><label className={s.formLabel}>Phone</label><input className={s.formInput} defaultValue={editing?.phone} /></div>
               <div className={s.formGroup}>
                 <label className={s.formLabel}>Role</label>
-                <select className={s.formInput} defaultValue={editing?.role ?? 'Analyst'}>
-                  {['Super Admin', 'Admin', 'Manager', 'Analyst'].map(r => <option key={r}>{r}</option>)}
+                <select className={s.formInput} defaultValue={editing?.role ?? 'USER'}>
+                  {['ADMIN', 'MANAGER', 'USER'].map(r => <option key={r}>{r}</option>)}
                 </select>
               </div>
             </div>

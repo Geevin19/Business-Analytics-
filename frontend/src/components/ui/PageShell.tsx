@@ -12,7 +12,7 @@ export default function PageShell({ title, subtitle, children, actions }: Props)
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <div>
+        <div className={styles.headerLeft}>
           <h1 className={styles.title}>{title}</h1>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
         </div>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { NotificationProvider } from '@/context/NotificationContext'
@@ -27,6 +27,7 @@ import CustomersPage from '@/pages/analytics/CustomersPage'
 import FinancePage from '@/pages/analytics/FinancePage'
 import InventoryPage from '@/pages/analytics/InventoryPage'
 import UserDataPage from '@/pages/analytics/UserDataPage'
+import AnalyticalPage from '@/pages/analytics/AnalyticalPage'
 import ForecastingPage from '@/pages/ai/ForecastingPage'
 import TrendsPage from '@/pages/ai/TrendsPage'
 import RecommendationsPage from '@/pages/ai/RecommendationsPage'
@@ -80,6 +81,7 @@ export default function App() {
                 <Route path="/analytics/finance" element={<FinancePage />} />
                 <Route path="/analytics/inventory" element={<InventoryPage />} />
                 <Route path="/analytics/user-data" element={<UserDataPage />} />
+                <Route path="/analytical/:columnId" element={<AnalyticalPage />} />
                 <Route path="/ai/forecasting" element={<ForecastingPage />} />
                 <Route path="/ai/trends" element={<TrendsPage />} />
                 <Route path="/ai/recommendations" element={<RecommendationsPage />} />

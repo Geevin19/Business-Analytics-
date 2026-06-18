@@ -1,280 +1,393 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   DollarSign, Users, ShoppingCart,
-  ArrowUpRight, Activity, BarChart3,
-  CheckCircle2, Clock, MoreHorizontal, Filter
+  ArrowUpRight, ArrowDownLeft, Activity, BarChart3,
+  CheckCircle2, Clock, MoreHorizontal, TrendingUp,
+  MapPin, Search, Bell, Download, RefreshCcw
 } from 'lucide-react'
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
 import styles from './DashboardPage.module.css'
+import { getDashboard, getSales } from '@/services/admin.service'
+import api from '@/services/api'
 
-/* ── Mock / sample data ── */
-const revenueData = [
-  { month: 'Jan', revenue: 42000, expenses: 28000, profit: 14000 },
-  { month: 'Feb', revenue: 48000, expenses: 30000, profit: 18000 },
-  { month: 'Mar', revenue: 55000, expenses: 32000, profit: 23000 },
-  { month: 'Apr', revenue: 51000, expenses: 29000, profit: 22000 },
-  { month: 'May', revenue: 63000, expenses: 35000, profit: 28000 },
-  { month: 'Jun', revenue: 71000, expenses: 38000, profit: 33000 },
-  { month: 'Jul', revenue: 68000, expenses: 36000, profit: 32000 },
-  { month: 'Aug', revenue: 78000, expenses: 40000, profit: 38000 },
-  { month: 'Sep', revenue: 82000, expenses: 42000, profit: 40000 },
-  { month: 'Oct', revenue: 90000, expenses: 45000, profit: 45000 },
-  { month: 'Nov', revenue: 87000, expenses: 43000, profit: 44000 },
-  { month: 'Dec', revenue: 94200, expenses: 48000, profit: 46200 },
-]
+const SURVEY_COLORS = ['#16a34a', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6']
 
-const salesByRegion = [
-  { name: 'North America', value: 35 },
-  { name: 'Europe', value: 22 },
-  { name: 'Asia Pacific', value: 28 },
-  { name: 'Rest of World', value: 15 },
-]
-
-const CHART_COLORS = ['#16a34a', '#22c55e', '#10b981', '#059669', '#047857']
-
-const expenseCategories = [
-  { name: 'Marketing', value: 35 },
-  { name: 'Operations', value: 25 },
-  { name: 'Software', value: 20 },
-  { name: 'HR & Payroll', value: 12 },
-  { name: 'Other', value: 8 },
-]
-
-const EXPENSE_COLORS = ['#f97316', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
-
-const topProducts = [
-  { product: 'Analytics Pro', sales: 4200, growth: 12 },
-  { product: 'Data Suite', sales: 3800, growth: 8 },
-  { product: 'AI Insights', sales: 3100, growth: 15 },
-  { product: 'Report Hub', sales: 2700, growth: -3 },
-  { product: 'Cloud Sync', sales: 2200, growth: 5 },
-]
-
-const recentTransactions = [
-  { id: '#INV-001', customer: 'Acme Corp', amount: 4990, status: 'Completed', date: '2 min ago' },
-  { id: '#INV-002', customer: 'TechFlow Inc', amount: 2990, status: 'Completed', date: '15 min ago' },
-  { id: '#INV-003', customer: 'Global Retail', amount: 1490, status: 'Pending', date: '1 hr ago' },
-  { id: '#INV-004', customer: 'StartUp Labs', amount: 3240, status: 'Processing', date: '2 hr ago' },
-  { id: '#INV-005', customer: 'Nova Corp', amount: 2100, status: 'Completed', date: '3 hr ago' },
-]
-
-/* ── Component ── */
 export default function DashboardPage() {
-  const [period, setPeriod] = useState<'7d' | '30d' | '12m'>('12m')
+  const [period, setPeriod] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all')
+  const [kpis, setKpis] = useState<any>({})
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([])
+  const [salesByRegion, setSalesByRegion] = useState<any[]>([])
+  const [revenueData, setRevenueData] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [location, setLocation] = useState<'all' | 'us' | 'eu' | 'asia'>('all')
+  const [selectedChart, setSelectedChart] = useState<'Area' | 'Bar' | 'Line' | 'Pie'>('Area')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const loadDashboard = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      const [db, summary, sales] = await Promise.all([
+        getDashboard().catch(() => null),
+        api.get('/sales/summary').then((r) => r.data).catch(() => null),
+        getSales().catch(() => null),
+      ])
+
+      if (db) setKpis(db)
+      if (summary) setSalesByRegion(summary.byRegion || [])
+
+      if (sales && Array.isArray(sales)) {
+        setRecentTransactions(
+          sales.slice(0, 5).map((s: any) => ({
+            id: s.id || '#INV',
+            customer: s.customers?.name || 'Unknown',
+            amount: Number(s.total) || 0,
+            status: 'Completed',
+            date: s.sale_date ? new Date(s.sale_date).toLocaleDateString() : '',
+          }))
+        )
+
+        const monthMap: Record<string, { revenue: number; expenses: number }> = {}
+        sales.forEach((s: any) => {
+          if (s.sale_date) {
+            const d = new Date(s.sale_date)
+            const key = d.toLocaleString('en-US', { month: 'short' })
+            if (!monthMap[key]) monthMap[key] = { revenue: 0, expenses: 0 }
+            monthMap[key].revenue += Number(s.total || 0)
+            monthMap[key].expenses += Math.round(Number(s.total || 0) * 0.45)
+          }
+        })
+
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        setRevenueData(months.map((m) => ({
+          month: m,
+          revenue: Math.round((monthMap[m]?.revenue || 0) / 1000),
+          expenses: Math.round((monthMap[m]?.expenses || 0) / 1000),
+          profit: Math.round(((monthMap[m]?.revenue || 0) - (monthMap[m]?.expenses || 0)) / 1000),
+        })))
+      }
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadDashboard()
+  }, [loadDashboard])
+
+  const totalCustomers = kpis.totalCustomers ?? 0
+  const totalRevenue = kpis.totalRevenue ?? 0
+  const totalSales = kpis.totalSales ?? 0
+  const newCustomers = Math.round(totalCustomers * 0.88)
+  const avgOrderValue = totalSales ? totalRevenue / totalSales : 674.54
+
+  const periodLabels: Record<string, string> = {
+    all: 'All Time',
+    today: 'Today',
+    week: 'This Week',
+    month: 'This Month',
+    year: 'This Year',
+  }
+
+  const marketSurvey = [
+    { category: 'Product A', satisfaction: 92, revenue: 45 },
+    { category: 'Product B', satisfaction: 78, revenue: 32 },
+    { category: 'Product C', satisfaction: 65, revenue: 28 },
+    { category: 'Product D', satisfaction: 88, revenue: 52 },
+    { category: 'Product E', satisfaction: 71, revenue: 19 },
+  ]
 
   return (
     <div className={styles.page}>
 
       {/* ── Header ── */}
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Dashboard</h1>
-          <p className={styles.subtitle}>Real-time business performance overview</p>
-        </div>
-        <div className={styles.headerActions}>
-          <div className={styles.periodToggle}>
-            <button
-              className={`${styles.periodBtn} ${period === '7d' ? styles.active : ''}`}
-              onClick={() => setPeriod('7d')}
-            >7d</button>
-            <button
-              className={`${styles.periodBtn} ${period === '30d' ? styles.active : ''}`}
-              onClick={() => setPeriod('30d')}
-            >30d</button>
-            <button
-              className={`${styles.periodBtn} ${period === '12m' ? styles.active : ''}`}
-              onClick={() => setPeriod('12m')}
-            >12m</button>
+      <div className={styles.headerTop}>
+        <div className={styles.headerTitleGroup}>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>Dashboard Overview</h1>
+            <span className={styles.growthBadge}>+14.2%</span>
           </div>
-          <button className={styles.filterBtn}>
-            <Filter size={14} />
-            Filters
+          <p className={styles.subtitle}>All Modules · {periodLabels[period]}</p>
+        </div>
+
+        <div className={styles.headerActions}>
+          <div className={styles.searchWrap}>
+            <Search className={styles.searchIcon} size={16} />
+            <input
+              className={styles.searchInput}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search data..."
+            />
+          </div>
+          <button className={styles.actionBtn} type="button" onClick={loadDashboard} disabled={isRefreshing}>
+            <RefreshCcw size={16} />
+            Refresh
+          </button>
+          <button className={styles.actionBtnPrimary} type="button">
+            <Download size={16} />
+            Export
+          </button>
+          <button className={styles.notificationBtn} type="button">
+            <Bell size={16} />
+            <span className={styles.notificationBadge}>3</span>
           </button>
         </div>
       </div>
 
-      {/* ── KPI Row ── */}
+      <div className={styles.filterToolbar}>
+        <div className={styles.filterTabs}>
+          {[
+            { label: 'All Time', value: 'all' },
+            { label: 'Today', value: 'today' },
+            { label: 'Week', value: 'week' },
+            { label: 'Month', value: 'month' },
+            { label: 'Year', value: 'year' },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              className={`${styles.filterTab} ${period === tab.value ? styles.active : ''}`}
+              onClick={() => setPeriod(tab.value as any)}
+              type="button"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.filterActions}>
+          <div className={styles.locationLabel}>
+            <MapPin size={14} />
+            <span>PLACE</span>
+          </div>
+          <select
+            className={styles.filterSelect}
+            value={location}
+            onChange={(event) => setLocation(event.target.value as any)}
+          >
+            <option value="all">All Locations</option>
+            <option value="us">United States</option>
+            <option value="eu">Europe</option>
+            <option value="asia">Asia</option>
+          </select>
+          <div className={styles.chartGroup}
+          >
+            <span className={styles.chartLabel}>CHART</span>
+            <div className={styles.chartToggleGroup}>
+              {['Area', 'Bar', 'Line', 'Pie'].map((label) => (
+                <button
+                  key={label}
+                  className={`${styles.chartToggleBtn} ${selectedChart === label ? styles.active : ''}`}
+                  type="button"
+                  onClick={() => setSelectedChart(label as any)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Statistics Summary (Vertical Grid) ── */}
       <div className={styles.kpiRow}>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiIcon} style={{ background: '#dcfce7', color: '#16a34a' }}>
-            <DollarSign size={18} strokeWidth={2} />
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel}>Total Revenue</span>
-            <span className={styles.kpiValue}>$94,200</span>
-            <span className={styles.kpiChange}>
-              <ArrowUpRight size={12} />
-              12.3%
+        {[
+          {
+            label: 'Total Customers',
+            value: totalCustomers.toLocaleString(),
+            change: '+8.2%',
+            status: 'up',
+            icon: <Users size={16} strokeWidth={2} />,
+            bg: '#dcfce7',
+            color: '#16a34a',
+          },
+          {
+            label: 'New Customers',
+            value: newCustomers.toLocaleString(),
+            change: '+3.1%',
+            status: 'up',
+            icon: <Users size={16} strokeWidth={2} />,
+            bg: '#dbeafe',
+            color: '#2563eb',
+          },
+          {
+            label: 'Avg. Order Value',
+            value: `$${avgOrderValue.toFixed(2)}`,
+            change: '-2.3%',
+            status: 'down',
+            icon: <DollarSign size={16} strokeWidth={2} />,
+            bg: '#f3e8ff',
+            color: '#9333ea',
+          },
+          {
+            label: 'Total Revenue',
+            value: `$${totalRevenue.toLocaleString()}`,
+            change: `+${(kpis.profitMargin || 15.2).toFixed(1)}%`,
+            status: 'up',
+            icon: <BarChart3 size={16} strokeWidth={2} />,
+            bg: '#dcfce7',
+            color: '#16a34a',
+          },
+          {
+            label: 'Orders',
+            value: totalSales.toLocaleString(),
+            change: '+5.7%',
+            status: 'up',
+            icon: <ShoppingCart size={16} strokeWidth={2} />,
+            bg: '#ffedd5',
+            color: '#f97316',
+          },
+          {
+            label: 'Monthly Recurring',
+            value: `$${Math.round(totalRevenue / 1000)}K`,
+            change: '+18.9%',
+            status: 'up',
+            icon: <Activity size={16} strokeWidth={2} />,
+            bg: '#d1fae5',
+            color: '#059669',
+          },
+          {
+            label: 'Total Transactions',
+            value: (recentTransactions.length || totalSales).toLocaleString(),
+            change: '+6.4%',
+            status: 'up',
+            icon: <CheckCircle2 size={16} strokeWidth={2} />,
+            bg: '#ede9fe',
+            color: '#7c3aed',
+          },
+          {
+            label: 'Churn Rate',
+            value: '12.0%',
+            change: '-2.1%',
+            status: 'up',
+            icon: <TrendingUp size={16} strokeWidth={2} />,
+            bg: '#fee2e2',
+            color: '#dc2626',
+          },
+        ].map((card) => (
+          <div key={card.label} className={styles.kpiCard}>
+            <span className={styles.kpiLabel}>{card.label}</span>
+            <span className={styles.kpiValue}>{card.value}</span>
+            <span className={`${styles.kpiChange} ${card.status}`}>
+              {card.status === 'down' ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
+              {card.change}
             </span>
+            <div className={styles.kpiIconWrap} style={{ background: card.bg, color: card.color }}>
+              {card.icon}
+            </div>
           </div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiIcon} style={{ background: '#dbeafe', color: '#2563eb' }}>
-            <ShoppingCart size={18} strokeWidth={2} />
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel}>Total Orders</span>
-            <span className={styles.kpiValue}>1,203</span>
-            <span className={styles.kpiChange}>
-              <ArrowUpRight size={12} />
-              8.7%
-            </span>
-          </div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiIcon} style={{ background: '#fef3c7', color: '#d97706' }}>
-            <Users size={18} strokeWidth={2} />
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel}>Customers</span>
-            <span className={styles.kpiValue}>12,491</span>
-            <span className={styles.kpiChange}>
-              <ArrowUpRight size={12} />
-              5.2%
-            </span>
-          </div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiIcon} style={{ background: '#fce7f3', color: '#db2777' }}>
-            <BarChart3 size={18} strokeWidth={2} />
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel}>Profit Margin</span>
-            <span className={styles.kpiValue}>49.0%</span>
-            <span className={styles.kpiChange}>
-              <ArrowUpRight size={12} />
-              2.1%
-            </span>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* ── Charts Row 1 ── */}
-      <div className={styles.chartsRow}>
-        <div className={styles.chartCard}>
-          <div className={styles.cardHeader}>
-            <h3>Revenue vs Expenses</h3>
-            <div className={styles.cardActions}>
-              <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+      {/* ── Main Content: Chart (Left) + Side Panels (Right) ── */}
+      <div className={styles.mainContent}>
+        {/* Left: Revenue over time chart */}
+        <div className={styles.mainChart}>
+          <div className={styles.chartCard}>
+            <div className={styles.cardHeader}>
+              <h3>Revenue vs Expenses over Time</h3>
+              <div className={styles.cardActions}>
+                <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+              </div>
             </div>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="exp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.12} />
+                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(v: number) => `$${v.toLocaleString()}K`}
+                  contentStyle={{
+                    borderRadius: 8, border: '1px solid #e8eaf0',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    fontSize: 13,
+                  }}
+                />
+                <Legend iconType="circle" iconSize={8} />
+                <Area type="monotone" dataKey="revenue" stroke="#16a34a" fill="url(#rev)" strokeWidth={2} name="Revenue" />
+                <Area type="monotone" dataKey="expenses" stroke="#f43f5e" fill="url(#exp)" strokeWidth={2} name="Expenses" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={revenueData}>
-              <defs>
-                <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="exp" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.12} />
-                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(v: number) => `$${v.toLocaleString()}`}
-                contentStyle={{
-                  borderRadius: 8, border: '1px solid #e8eaf0',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: 13,
-                }}
-              />
-              <Legend iconType="circle" iconSize={8} />
-              <Area type="monotone" dataKey="revenue" stroke="#16a34a" fill="url(#rev)" strokeWidth={2} name="Revenue" />
-              <Area type="monotone" dataKey="expenses" stroke="#f43f5e" fill="url(#exp)" strokeWidth={2} name="Expenses" />
-            </AreaChart>
-          </ResponsiveContainer>
         </div>
 
-        <div className={styles.chartCard}>
-          <div className={styles.cardHeader}>
-            <h3>Sales by Region</h3>
-            <div className={styles.cardActions}>
-              <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+        {/* Right: Regional Distribution + Market Survey */}
+        <div className={styles.sidePanels}>
+          <div className={styles.chartCard}>
+            <div className={styles.cardHeader}>
+              <h3>Regional Distribution</h3>
+              <div className={styles.cardActions}>
+                <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie
+                  data={salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]}
+                  cx="50%" cy="50%"
+                  innerRadius={40} outerRadius={70}
+                  dataKey="value"
+                  paddingAngle={4}
+                >
+                  {(salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]).map((_, i) => (
+                    <Cell key={i} fill={SURVEY_COLORS[i % SURVEY_COLORS.length]} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v: number) => `$${(v || 0).toLocaleString()}`}
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', fontSize: 13 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className={styles.regionLegend}>
+              {(salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]).map((r: any, i: number) => (
+                <div key={r.name} className={styles.regionItem}>
+                  <span className={styles.regionDot} style={{ background: SURVEY_COLORS[i % SURVEY_COLORS.length] }} />
+                  <span className={styles.regionName}>{r.name}</span>
+                  <span className={styles.regionValue}>${(r.value || 0).toLocaleString()}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={salesByRegion}
-                cx="50%" cy="50%"
-                innerRadius={60} outerRadius={90}
-                dataKey="value"
-                paddingAngle={4}
-              >
-                {salesByRegion.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="none" />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(v: number) => `${v}%`}
-                contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', fontSize: 13 }}
-              />
-              <Legend iconType="circle" iconSize={8} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
 
-      {/* ── Charts Row 2 ── */}
-      <div className={styles.chartsRow}>
-        <div className={styles.chartCard}>
-          <div className={styles.cardHeader}>
-            <h3>Expense Breakdown</h3>
-            <div className={styles.cardActions}>
-              <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+          <div className={styles.chartCard}>
+            <div className={styles.cardHeader}>
+              <h3>Market Survey</h3>
+              <div className={styles.cardActions}>
+                <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+              </div>
+            </div>
+            <div className={styles.surveyList}>
+              {marketSurvey.map((item) => (
+                <div key={item.category} className={styles.surveyItem}>
+                  <div className={styles.surveyHeader}>
+                    <TrendingUp size={13} strokeWidth={2} color="#16a34a" />
+                    <span className={styles.surveyCategory}>{item.category}</span>
+                    <span className={styles.surveyRevenue}>${item.revenue}K</span>
+                  </div>
+                  <div className={styles.surveyBarTrack}>
+                    <div
+                      className={styles.surveyBarFill}
+                      style={{ width: `${item.satisfaction}%` }}
+                    />
+                  </div>
+                  <span className={styles.surveyPercent}>{item.satisfaction}% satisfaction</span>
+                </div>
+              ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={expenseCategories}
-                cx="50%" cy="50%"
-                innerRadius={50} outerRadius={80}
-                dataKey="value"
-                paddingAngle={3}
-              >
-                {expenseCategories.map((_, i) => (
-                  <Cell key={i} fill={EXPENSE_COLORS[i % EXPENSE_COLORS.length]} stroke="none" />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(v: number) => `${v}%`}
-                contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', fontSize: 13 }}
-              />
-              <Legend iconType="circle" iconSize={8} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className={styles.chartCard}>
-          <div className={styles.cardHeader}>
-            <h3>Top Products by Sales</h3>
-            <div className={styles.cardActions}>
-              <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={topProducts} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis
-                dataKey="product"
-                type="category"
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                width={90}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', fontSize: 13 }} />
-              <Bar dataKey="sales" fill="#16a34a" radius={[0, 6, 6, 0]} maxBarSize={24} />
-            </BarChart>
-          </ResponsiveContainer>
         </div>
       </div>
 
@@ -294,16 +407,21 @@ export default function DashboardPage() {
             <span>Status</span>
             <span>Time</span>
           </div>
+          {recentTransactions.length === 0 && (
+            <div className={styles.tableRow} style={{ justifyContent: 'center', color: '#94a3b8' }}>
+              <span>No recent transactions</span>
+            </div>
+          )}
           {recentTransactions.map((tx, i) => (
             <div key={i} className={styles.tableRow}>
               <span className={styles.invoiceId}>{tx.id}</span>
               <span className={styles.customerName}>{tx.customer}</span>
-              <span className={styles.amount}>${tx.amount.toLocaleString()}</span>
-              <span className={`${styles.status} ${styles[tx.status.toLowerCase()]}`}>
+              <span className={styles.amount}>${(tx.amount || 0).toLocaleString()}</span>
+              <span className={`${styles.status} ${styles[tx.status?.toLowerCase() || 'completed']}`}>
                 {tx.status === 'Completed' && <CheckCircle2 size={12} />}
                 {tx.status === 'Pending' && <Clock size={12} />}
                 {tx.status === 'Processing' && <Activity size={12} />}
-                {tx.status}
+                {tx.status || 'Completed'}
               </span>
               <span className={styles.date}>{tx.date}</span>
             </div>
