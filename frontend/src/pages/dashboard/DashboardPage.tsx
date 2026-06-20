@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [location, setLocation] = useState<'all' | 'us' | 'eu' | 'asia'>('all')
   const [selectedChart, setSelectedChart] = useState<'Area' | 'Bar' | 'Line' | 'Pie'>('Area')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [marketSurvey, setMarketSurvey] = useState<any[]>([])
 
   const loadDashboard = useCallback(async () => {
     setIsRefreshing(true)
@@ -88,6 +89,36 @@ export default function DashboardPage() {
     loadDashboard()
   }, [loadDashboard])
 
+  // Load market survey data
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const [productsRes, salesRes] = await Promise.all([
+          api.get('/products').then(r => r.data).catch(() => []),
+          api.get('/sales').then(r => r.data).catch(() => []),
+        ])
+        if (!mounted) return
+
+        const productPerformance = (productsRes || []).map((p: any) => {
+          const productSales = (salesRes || []).filter((s: any) => s.product_id === p.id)
+          const revenue = productSales.reduce((sum: number, s: any) => sum + Number(s.total || s.amount || 0), 0)
+          return {
+            category: p.name || 'Unknown',
+            satisfaction: Math.min(95, Math.max(50, 80 - (p.price || 0) / 10)),
+            revenue: Math.round(revenue / 1000),
+          }
+        }).slice(0, 5)
+        
+        setMarketSurvey(productPerformance)
+      } catch (e) {
+        console.error('Failed to load market survey data', e)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
   const totalCustomers = kpis.totalCustomers ?? 0
   const totalRevenue = kpis.totalRevenue ?? 0
   const totalSales = kpis.totalSales ?? 0
@@ -101,14 +132,6 @@ export default function DashboardPage() {
     month: 'This Month',
     year: 'This Year',
   }
-
-  const marketSurvey = [
-    { category: 'Product A', satisfaction: 92, revenue: 45 },
-    { category: 'Product B', satisfaction: 78, revenue: 32 },
-    { category: 'Product C', satisfaction: 65, revenue: 28 },
-    { category: 'Product D', satisfaction: 88, revenue: 52 },
-    { category: 'Product E', satisfaction: 71, revenue: 19 },
-  ]
 
   const placeValuesByRegion: Record<'all' | 'us' | 'eu' | 'asia', typeof LOCATION_DATA> = {
     all: LOCATION_DATA,
@@ -238,7 +261,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={220}>
-          {selectedChart === 'Area' && (
+          {selectedChart === 'Area' ? (
             <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="ot1" x1="0" y1="0" x2="0" y2="1">
@@ -257,8 +280,7 @@ export default function DashboardPage() {
               <Area type="monotone" dataKey="revenue" stroke="#16a34a" fill="url(#ot1)" strokeWidth={2} name="Revenue" />
               <Area type="monotone" dataKey="profit" stroke="#22c55e" fill="url(#ot2)" strokeWidth={2} strokeDasharray="5 3" name="Profit" />
             </AreaChart>
-          )}
-          {selectedChart === 'Bar' && (
+          ) : selectedChart === 'Bar' ? (
             <BarChart data={revenueData} barGap={8}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
@@ -268,8 +290,7 @@ export default function DashboardPage() {
               <Bar dataKey="revenue" fill="#16a34a" radius={[4, 4, 0, 0]} name="Revenue" />
               <Bar dataKey="profit" fill="#22c55e" radius={[4, 4, 0, 0]} name="Profit" />
             </BarChart>
-          )}
-          {selectedChart === 'Line' && (
+          ) : selectedChart === 'Line' ? (
             <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
@@ -279,8 +300,7 @@ export default function DashboardPage() {
               <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={2} dot={false} name="Revenue" />
               <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={false} strokeDasharray="5 3" name="Profit" />
             </LineChart>
-          )}
-          {selectedChart === 'Pie' && (
+          ) : (
             <PieChart>
               <Pie data={revenueData} dataKey="revenue" nameKey="month" cx="50%" cy="50%" outerRadius={80} label>
                 {revenueData.map((_, index) => (
@@ -468,13 +488,13 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
-                  data={salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]}
+                  data={salesByRegion.length > 0 ? salesByRegion : []}
                   cx="50%" cy="50%"
                   innerRadius={40} outerRadius={70}
                   dataKey="value"
                   paddingAngle={4}
                 >
-                  {(salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]).map((_, i) => (
+                  {(salesByRegion.length > 0 ? salesByRegion : []).map((_, i) => (
                     <Cell key={i} fill={SURVEY_COLORS[i % SURVEY_COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
@@ -485,7 +505,7 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className={styles.regionLegend}>
-              {(salesByRegion.length > 0 ? salesByRegion : [{ name: 'North', value: 35 }, { name: 'South', value: 28 }, { name: 'East', value: 22 }, { name: 'West', value: 15 }]).map((r: any, i: number) => (
+              {(salesByRegion.length > 0 ? salesByRegion : []).map((r: any, i: number) => (
                 <div key={r.name} className={styles.regionItem}>
                   <span className={styles.regionDot} style={{ background: SURVEY_COLORS[i % SURVEY_COLORS.length] }} />
                   <span className={styles.regionName}>{r.name}</span>
