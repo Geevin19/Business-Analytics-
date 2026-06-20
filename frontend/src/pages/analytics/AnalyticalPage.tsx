@@ -3,7 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   BarChart3, TrendingUp, TrendingDown, Activity,
   AreaChart as AreaChartIcon, BarChart, LineChart, PieChart,
-  Calendar, MapPin, Download, Table2, RefreshCw
+  Calendar, MapPin, Download, Table2, RefreshCw,
+  ArrowUpRight, ArrowDownLeft, Hash, LineChart as LineChartIcon,
+  Sigma, Minus, Plus, Target, Zap, TrendingUp as TrendUpIcon,
+  Search, Bell, MoreHorizontal, CheckCircle2, Clock,
+  Info
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart as ReBarChart, Bar, LineChart as ReLineChart, Line,
@@ -58,6 +62,9 @@ interface FullDataset {
   numericColumns: string[]
   analysis: Record<string, TrendDetail>
   rawPreview: Record<string, any>[]
+  schedule?: string
+  locationColumns?: string[]
+  locationAnalysis?: Record<string, Record<string, TrendDetail>>
 }
 
 type ChartType = 'area' | 'bar' | 'line' | 'pie'
@@ -99,8 +106,27 @@ function getDateRange(filter: TimeFilter): { start: Date; end: Date } {
   return { start, end }
 }
 
+/* ── Statistical Formula Labels ── */
+const FORMULAS: Record<string, { formula: string; label: string }> = {
+  mean: { label: 'Mean (μ)', formula: 'μ = (1/n) × Σxᵢ  — average of all values' },
+  median: { label: 'Median', formula: 'Middle value when data is sorted (50th percentile)' },
+  stdDev: { label: 'Std Dev (σ)', formula: 'σ = √( (1/n) × Σ(xᵢ - μ)² )  — measures data spread' },
+  variance: { label: 'Variance (σ²)', formula: 'σ² = (1/n) × Σ(xᵢ - μ)²  — squared deviation from mean' },
+  min: { label: 'Minimum', formula: 'Min = smallest value in dataset' },
+  max: { label: 'Maximum', formula: 'Max = largest value in dataset' },
+  range: { label: 'Range', formula: 'Range = Max - Min  — total spread of data' },
+  trend: { label: 'Trend', formula: 'Trend% = ((last - first) / |first|) × 100  — direction & magnitude' },
+  r2: { label: 'R² (Coefficient of Determination)', formula: 'R² = 1 - (SS_res / SS_tot)  — how well regression fits (0-1)' },
+  cgr: { label: 'Compound Growth Rate (CGR)', formula: 'CGR = ((V_final / V_initial)^(1/(n-1)) - 1) × 100  — annualized growth' },
+  slope: { label: 'Regression Slope (m)', formula: 'm = (n×Σxy - Σx×Σy) / (n×Σx² - (Σx)²)  — rate of change per unit' },
+  movingAvg: { label: 'Moving Average (MA)', formula: 'MA_k = (1/w) × Σ(x_i ... x_{i+w-1})  — smooths fluctuations (window=3)' },
+  forecast: { label: 'Forecast (Linear Extrapolation)', formula: 'F(t) = m×t + b  — projects future values along regression line' },
+  seasonalIndex: { label: 'Seasonal Index', formula: 'S_i = (avg of period i / overall mean) × 100  — detects seasonal patterns' },
+}
+
 /* ── Palette for Pie ── */
 const COLORS = ['#16a34a', '#2563eb', '#f97316', '#8b5cf6', '#dc2626', '#14b8a6', '#f59e0b', '#ec4899']
+const SURVEY_COLORS = ['#16a34a', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6']
 
 /* ── Component ── */
 export default function AnalyticalPage() {
@@ -113,6 +139,7 @@ export default function AnalyticalPage() {
   const [chartType, setChartType] = useState<ChartType>('area')
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all')
   const [placeFilter, setPlaceFilter] = useState<string>('all')
+  const [showFormula, setShowFormula] = useState<string | null>(null)
 
   // Find the active column info
   const activeColumn = useMemo(
@@ -125,11 +152,9 @@ export default function AnalyticalPage() {
     try {
       setLoading(true)
 
-      // Get analyzed columns list
       const colsRes = await api.get('/trend/analyzed-columns')
       setAllColumns(colsRes.data)
 
-      // If we have a columnId, find which dataset it belongs to
       if (columnId) {
         const col = colsRes.data.find((c: AnalyzedColumn) => c.id === columnId)
         if (col) {
@@ -146,30 +171,60 @@ export default function AnalyticalPage() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  // Extract unique "places" from rawPreview (look for location-like columns)
+  // Extract unique "places" from rawPreview
   const placeOptions = useMemo(() => {
     if (!fullDataset) return ['all']
-    const preview = fullDataset.rawPreview
-    if (preview.length === 0) return ['all']
-
-    // Find columns that look like location/place/region/city/country
-    const locationCol = fullDataset.columnNames.find(k =>
-      /place|location|region|city|country|state|area|zone|branch|office|store|dept/i.test(k)
-    )
-
-    if (locationCol) {
-      const unique = [...new Set(preview.map(r => String(r[locationCol] ?? '')).filter(Boolean))]
+    const locationCols = fullDataset.locationColumns
+    if (locationCols && locationCols.length > 0) {
+      const locCol = locationCols[0]
+      const unique = [...new Set(fullDataset.rawPreview.map(r => String(r[locCol] ?? '')).filter(Boolean))]
       return unique.length > 0 ? ['all', ...unique] : ['all']
     }
-
     return ['all']
   }, [fullDataset])
+
+  // Build location breakdown data from rawPreview
+  const locationBreakdownData = useMemo(() => {
+    if (!fullDataset || !activeColumn) return []
+    const locationCols = fullDataset.locationColumns
+    if (!locationCols || locationCols.length === 0) return []
+
+    const locCol = locationCols[0]
+    const colName = activeColumn.columnName
+    const groups: Record<string, number[]> = {}
+
+    fullDataset.rawPreview.forEach(r => {
+      const loc = String(r[locCol] ?? 'Unknown')
+      const val = Number(r[colName])
+      if (!isNaN(val)) {
+        if (!groups[loc]) groups[loc] = []
+        groups[loc].push(val)
+      }
+    })
+
+    return Object.entries(groups)
+      .filter(([, vals]) => vals.length > 0)
+      .map(([location, vals]) => {
+        const avg = vals.reduce((s, v) => s + v, 0) / vals.length
+        const total = vals.reduce((s, v) => s + v, 0)
+        const cnt = vals.length
+        return { location, avg: Math.round(avg * 100) / 100, total, count: cnt }
+      })
+      .sort((a, b) => b.total - a.total)
+  }, [fullDataset, activeColumn])
 
   // Get the active analysis for the column
   const activeAnalysis = useMemo<TrendDetail | null>(() => {
     if (!fullDataset || !activeColumn) return null
+
+    // If place filter is active and we have location analysis, use it
+    if (placeFilter !== 'all' && fullDataset.locationAnalysis && fullDataset.locationAnalysis[placeFilter]) {
+      const locAnalysis = fullDataset.locationAnalysis[placeFilter]
+      return locAnalysis[activeColumn.columnName] ?? null
+    }
+
     return fullDataset.analysis[activeColumn.columnName] ?? null
-  }, [fullDataset, activeColumn])
+  }, [fullDataset, activeColumn, placeFilter])
 
   // Filter data based on time and place
   const filteredData = useMemo(() => {
@@ -182,48 +237,18 @@ export default function AnalyticalPage() {
       movingAvg: activeAnalysis.movingAverage?.[i] ?? null,
     }))
 
-    // Apply place filter on rawPreview if available
-    if (placeFilter !== 'all' && fullDataset) {
-      const locationCol = fullDataset.columnNames.find(k =>
-        /place|location|region|city|country|state|area|zone|branch|office|store|dept/i.test(k)
-      )
-      if (locationCol) {
-        const filteredPreview = fullDataset.rawPreview.filter(
-          r => String(r[locationCol] ?? '') === placeFilter
-        )
-        // If filtered, re-build data from the filtered preview
-        if (filteredPreview.length > 0) {
-          const col = activeColumn!.columnName
-          const filteredValues = filteredPreview
-            .map(r => Number(r[col]))
-            .filter(n => !isNaN(n))
-
-          if (filteredValues.length > 0) {
-            return filteredValues.map((v, i) => ({
-              label: `#${i + 1}`,
-              value: v,
-              movingAvg: null,
-            }))
-          }
-        }
-      }
-    }
-
-    // Apply time filter (slice data based on count)
-    const { end } = getDateRange(timeFilter)
+    // Apply time filter
     if (timeFilter !== 'all') {
-      const count = Math.max(1, Math.floor(combined.length / 12) || 1)
       const limit =
         timeFilter === 'today' ? Math.min(combined.length, 24) :
         timeFilter === 'week' ? Math.min(combined.length, 7) :
         timeFilter === 'month' ? Math.min(combined.length, 30) :
         Math.min(combined.length, 365)
-
       return combined.slice(-limit)
     }
 
     return combined
-  }, [activeAnalysis, timeFilter, placeFilter, fullDataset, activeColumn])
+  }, [activeAnalysis, timeFilter])
 
   // Build forecast data
   const forecastData = useMemo(() => {
@@ -241,6 +266,51 @@ export default function AnalyticalPage() {
     return [...current.slice(-30), ...future]
   }, [activeAnalysis])
 
+  // Generate market survey-like data from column stats
+  const marketSurveyData = useMemo(() => {
+    if (!activeAnalysis || !fullDataset) return []
+    return fullDataset.numericColumns
+      .filter(col => fullDataset.analysis[col])
+      .map(col => {
+        const a = fullDataset.analysis[col]
+        const r2Score = Math.round((a.linearRegression.r2 || 0) * 100)
+        const trendScore = Math.min(100, Math.round(Math.abs(a.trendPercentage) * 2))
+        const overallScore = Math.min(100, Math.round((r2Score + trendScore) / 2))
+        return {
+          category: col,
+          satisfaction: Math.max(10, overallScore),
+          revenue: Math.round(Math.abs(a.mean) / 1000),
+        }
+      })
+      .sort((a, b) => b.satisfaction - a.satisfaction)
+      .slice(0, 5)
+  }, [activeAnalysis, fullDataset])
+
+  // Regional distribution from location data
+  const regionalDistData = useMemo(() => {
+    if (locationBreakdownData.length > 0) {
+      return locationBreakdownData.map(d => ({
+        name: d.location,
+        value: Math.round(d.total),
+      }))
+    }
+    return []
+  }, [locationBreakdownData])
+
+  // Recent transactions from raw data
+  const recentTransactions = useMemo(() => {
+    if (!fullDataset || !activeColumn) return []
+    return fullDataset.rawPreview.slice(0, 5).map((r, i) => ({
+      id: `#${i + 1}`,
+      customer: r[fullDataset.columnNames[0]] || `Entry ${i + 1}`,
+      amount: Number(r[activeColumn.columnName]) || 0,
+      status: i === 0 ? 'Completed' : i === 1 ? 'Processing' : 'Completed',
+      date: fullDataset.uploadedAt
+        ? new Date(fullDataset.uploadedAt).toLocaleDateString()
+        : '-',
+    }))
+  }, [fullDataset, activeColumn])
+
   // Chart tooltip style
   const tooltipStyle = {
     contentStyle: { borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 } as React.CSSProperties,
@@ -253,7 +323,7 @@ export default function AnalyticalPage() {
     switch (chartType) {
       case 'area':
         return (
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={filteredData}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -264,62 +334,50 @@ export default function AnalyticalPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-              <Tooltip {...tooltipStyle} />
+              <Tooltip {...tooltipStyle} formatter={(v: number) => [formatNumber(v), 'Value']} />
               <Legend iconType="circle" iconSize={8} />
               <Area type="monotone" dataKey="value" stroke="var(--primary)" fill="url(#areaGrad)" strokeWidth={2} name="Value" />
               {activeAnalysis && (
-                <Area type="monotone" dataKey="movingAvg" stroke="#2563eb" fill="none" strokeWidth={2} strokeDasharray="4 4" name="Moving Avg" />
+                <Area type="monotone" dataKey="movingAvg" stroke="#2563eb" fill="none" strokeWidth={2} strokeDasharray="4 4" name="Moving Avg (3)" />
               )}
             </AreaChart>
           </ResponsiveContainer>
         )
-
       case 'bar':
         return (
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer width="100%" height={220}>
             <ReBarChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-              <Tooltip {...tooltipStyle} />
+              <Tooltip {...tooltipStyle} formatter={(v: number) => [formatNumber(v), 'Value']} />
               <Legend iconType="circle" iconSize={8} />
               <Bar dataKey="value" fill="var(--primary)" radius={[3, 3, 0, 0]} maxBarSize={28} name="Value" />
             </ReBarChart>
           </ResponsiveContainer>
         )
-
       case 'line':
         return (
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer width="100%" height={220}>
             <ReLineChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-              <Tooltip {...tooltipStyle} />
+              <Tooltip {...tooltipStyle} formatter={(v: number) => [formatNumber(v), 'Value']} />
               <Legend iconType="circle" iconSize={8} />
               <Line type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} dot={{ r: 2 }} name="Value" />
               {activeAnalysis && (
-                <Line type="monotone" dataKey="movingAvg" stroke="#2563eb" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Moving Avg" />
+                <Line type="monotone" dataKey="movingAvg" stroke="#2563eb" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Moving Avg (3)" />
               )}
             </ReLineChart>
           </ResponsiveContainer>
         )
-
       case 'pie':
         const pieData = filteredData.map(d => ({ name: d.label, value: Math.abs(d.value) }))
         return (
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer width="100%" height={220}>
             <RePieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                outerRadius={120}
-                innerRadius={50}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
+              <Pie data={pieData} cx="50%" cy="50%" outerRadius={80} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
                 {pieData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
@@ -329,10 +387,36 @@ export default function AnalyticalPage() {
             </RePieChart>
           </ResponsiveContainer>
         )
-
       default:
         return null
     }
+  }
+
+  // Render the location chart
+  const renderLocationChart = () => {
+    if (!locationBreakdownData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={220}>
+        <ReBarChart data={locationBreakdownData} barGap={4}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <XAxis dataKey="location" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+          <Tooltip {...tooltipStyle} />
+          <Legend iconType="square" iconSize={8} />
+          <Bar dataKey="total" fill="#16a34a" radius={[4, 4, 0, 0]} maxBarSize={28} name="Total Value" />
+          <Bar dataKey="avg" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={28} name="Average" />
+          <Bar dataKey="count" fill="#86efac" radius={[4, 4, 0, 0]} maxBarSize={28} name="Count" />
+        </ReBarChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  const periodLabels: Record<string, string> = {
+    all: 'All Time',
+    today: 'Today',
+    week: 'This Week',
+    month: 'This Month',
+    year: 'This Year',
   }
 
   // Handle case where no column is selected
@@ -350,51 +434,54 @@ export default function AnalyticalPage() {
 
   return (
     <PageShell
-      title={activeColumn ? `Analysis: ${activeColumn.columnName}` : 'Analytical View'}
-      subtitle={activeColumn ? `From dataset: ${activeColumn.datasetName}` : 'Detailed analysis of your data columns'}
+      title={activeColumn ? activeColumn.columnName : 'Analytical View'}
+      subtitle={activeColumn ? `From dataset: ${activeColumn.datasetName} · ${activeColumn.trendPercentage > 0 ? '+' : ''}${activeColumn.trendPercentage.toFixed(1)}% trend` : 'Detailed analysis of your data columns'}
     >
-      {/* ── Column Info Header ── */}
-      {activeColumn && (
-        <div className={styles.columnInfo}>
-          <span className={styles.columnInfoName}>{activeColumn.columnName}</span>
-          <span className={styles.columnInfoDataset}>from {activeColumn.datasetName}</span>
-          <span className={`${styles.columnInfoBadge} ${
-            activeColumn.trend === 'up' ? styles.badgeUp :
-            activeColumn.trend === 'down' ? styles.badgeDown : styles.badgeStable
-          }`}>
-            {activeColumn.trend === 'up' && <TrendingUp size={12} style={{ marginRight: 2, verticalAlign: 'middle' }} />}
-            {activeColumn.trend === 'down' && <TrendingDown size={12} style={{ marginRight: 2, verticalAlign: 'middle' }} />}
-            {activeColumn.trend === 'stable' && <Activity size={12} style={{ marginRight: 2, verticalAlign: 'middle' }} />}
-            {activeColumn.trendPercentage > 0 ? '+' : ''}{activeColumn.trendPercentage.toFixed(1)}%
-          </span>
+      {/* ── Heading + Refresh row ── */}
+      <div className={styles.headingRow}>
+        <div className={styles.headingActions}>
+          {fullDataset && (
+            <span className={styles.headingMeta}>
+              {fullDataset.fileName} · {fullDataset.rowCount} rows
+            </span>
+          )}
+          <button className={styles.headingRefresh} onClick={loadData} disabled={loading} title="Refresh data">
+            <RefreshCw size={14} className={loading ? styles.spinning : ''} />
+            Refresh
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* ── Filter Bar ── */}
-      <div className={styles.filterBar}>
-        {/* Time Filter */}
-        <span className={styles.filterLabel}><Calendar size={12} style={{ marginRight: 3, verticalAlign: 'middle' }} /> Time:</span>
-        <div className={styles.filterGroup}>
-          {(['all', 'today', 'week', 'month', 'year'] as TimeFilter[]).map(ft => (
+      {/* ── Filter Toolbar ── */}
+      <div className={styles.filterToolbar}>
+        <div className={styles.filterTabs}>
+          {[
+            { label: 'All Time', value: 'all' },
+            { label: 'Today', value: 'today' },
+            { label: 'Week', value: 'week' },
+            { label: 'Month', value: 'month' },
+            { label: 'Year', value: 'year' },
+          ].map((tab) => (
             <button
-              key={ft}
-              className={`${styles.filterBtn} ${timeFilter === ft ? styles.active : ''}`}
-              onClick={() => setTimeFilter(ft)}
+              key={tab.value}
+              className={`${styles.filterTab} ${timeFilter === tab.value ? styles.active : ''}`}
+              onClick={() => setTimeFilter(tab.value as any)}
+              type="button"
             >
-              {ft === 'all' ? 'All Time' : ft.charAt(0).toUpperCase() + ft.slice(1)}
+              {tab.label}
             </button>
           ))}
         </div>
 
-        <div className={styles.filterDivider} />
-
-        {/* Place Filter */}
-        <span className={styles.filterLabel}><MapPin size={12} style={{ marginRight: 3, verticalAlign: 'middle' }} /> Place:</span>
-        <div className={styles.placeFilter}>
+        <div className={styles.filterActions}>
+          <div className={styles.locationLabel}>
+            <MapPin size={14} />
+            <span>PLACE</span>
+          </div>
           <select
-            className={styles.placeSelect}
+            className={styles.filterSelect}
             value={placeFilter}
-            onChange={(e) => setPlaceFilter(e.target.value)}
+            onChange={(event) => setPlaceFilter(event.target.value)}
           >
             {placeOptions.map(p => (
               <option key={p} value={p}>
@@ -402,48 +489,22 @@ export default function AnalyticalPage() {
               </option>
             ))}
           </select>
+          <div className={styles.chartGroup}>
+            <span className={styles.chartLabel}>CHART</span>
+            <div className={styles.chartToggleGroup}>
+              {['Area', 'Bar', 'Line', 'Pie'].map((label) => (
+                <button
+                  key={label}
+                  className={`${styles.chartToggleBtn} ${chartType === label.toLowerCase() ? styles.active : ''}`}
+                  type="button"
+                  onClick={() => setChartType(label.toLowerCase() as any)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-
-        <div className={styles.filterDivider} />
-
-        {/* Chart Type Selector */}
-        <span className={styles.filterLabel}><BarChart3 size={12} style={{ marginRight: 3, verticalAlign: 'middle' }} /> Chart:</span>
-        <div className={styles.chartTypeBar}>
-          <button
-            className={`${styles.chartTypeBtn} ${chartType === 'area' ? styles.active : ''}`}
-            onClick={() => setChartType('area')}
-          >
-            <AreaChartIcon size={14} /> Area
-          </button>
-          <button
-            className={`${styles.chartTypeBtn} ${chartType === 'bar' ? styles.active : ''}`}
-            onClick={() => setChartType('bar')}
-          >
-            <BarChart size={14} /> Bar
-          </button>
-          <button
-            className={`${styles.chartTypeBtn} ${chartType === 'line' ? styles.active : ''}`}
-            onClick={() => setChartType('line')}
-          >
-            <LineChart size={14} /> Line
-          </button>
-          <button
-            className={`${styles.chartTypeBtn} ${chartType === 'pie' ? styles.active : ''}`}
-            onClick={() => setChartType('pie')}
-          >
-            <PieChart size={14} /> Pie
-          </button>
-        </div>
-
-        {/* Refresh Button */}
-        <button
-          className={styles.chartTypeBtn}
-          onClick={loadData}
-          title="Refresh data"
-          style={{ marginLeft: 'auto' }}
-        >
-          <RefreshCw size={14} /> Refresh
-        </button>
       </div>
 
       {loading ? (
@@ -453,127 +514,192 @@ export default function AnalyticalPage() {
         </div>
       ) : activeAnalysis ? (
         <>
-          {/* ── Main Content: Chart + Stats ── */}
-          <div className={styles.mainContent}>
-            {/* Chart Panel */}
-            <div className={styles.chartPanel}>
-              <div className={styles.chartPanelTitle}>
-                <BarChart3 size={16} />
-                {chartType === 'area' ? 'Area Chart' :
-                 chartType === 'bar' ? 'Bar Chart' :
-                 chartType === 'line' ? 'Line Chart' : 'Pie Chart'}
-                {timeFilter !== 'all' && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)', fontWeight: 400, marginLeft: 8 }}>
-                    ({timeFilter === 'today' ? 'Today' :
-                      timeFilter === 'week' ? 'This Week' :
-                      timeFilter === 'month' ? 'This Month' : 'This Year'}
-                    {placeFilter !== 'all' && ` - ${placeFilter}`})
-                  </span>
-                )}
+          {/* ── Overview Chart ── */}
+          <div className={styles.chartCard}>
+            <div className={styles.cardHeader}>
+              <div>
+                <h3>Column Overview — {chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart</h3>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+                  Showing {periodLabels[timeFilter].toLowerCase()} data
+                  {placeFilter !== 'all' && ` for ${placeFilter}`}
+                  {activeAnalysis && ` · ${activeAnalysis.rawData.length} data points`}
+                </p>
               </div>
-              <div className={styles.chartWrapper}>
-                {renderChart()}
+              <div className={styles.cardActions}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.78rem', color: '#64748b' }}>
+                  <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)', marginRight: 4 }} />Value</span>
+                  {activeAnalysis && (
+                    <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#2563eb', marginRight: 4 }} />MA(3)</span>
+                  )}
+                </div>
+                <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
               </div>
             </div>
+            {renderChart()}
+          </div>
 
-            {/* Statistics Panel */}
-            <div className={styles.statsPanel}>
-              <div className={styles.statsPanelTitle}>
-                <Table2 size={16} />
-                Statistics Summary
+          {/* ── KPI Cards ── */}
+          <div className={styles.chartCard}>
+            <div className={styles.cardHeader}>
+              <h3>Statistics Summary — Metrics & Formulas</h3>
+              <div className={styles.cardActions}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>
+                  Click <Info size={12} style={{ verticalAlign: 'middle' }} /> for formula
+                </span>
               </div>
-              <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Mean</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.mean)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Median</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.median)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Std Dev</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.stdDev)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Variance</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.variance)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Min</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.min)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Max</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.max)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Range</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.range)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>
-                    Trend
-                    {activeAnalysis.trend === 'up' && <TrendingUp size={12} style={{ marginLeft: 3, verticalAlign: 'middle', color: '#16a34a' }} />}
-                    {activeAnalysis.trend === 'down' && <TrendingDown size={12} style={{ marginLeft: 3, verticalAlign: 'middle', color: '#dc2626' }} />}
-                    {activeAnalysis.trend === 'stable' && <Activity size={12} style={{ marginLeft: 3, verticalAlign: 'middle', color: '#d97706' }} />}
+            </div>
+            <div className={styles.analyticsKpiRow}>
+              {[
+                { key: 'mean', label: 'Mean (μ)', value: formatNumber(activeAnalysis.mean), change: `${activeAnalysis.rawData.length} pts`, icon: <Hash size={14} />, bg: '#dcfce7', color: '#16a34a' },
+                { key: 'median', label: 'Median', value: formatNumber(activeAnalysis.median), change: '50th %ile', icon: <Target size={14} />, bg: '#dbeafe', color: '#2563eb' },
+                { key: 'stdDev', label: 'Std Dev (σ)', value: formatNumber(activeAnalysis.stdDev), change: activeAnalysis.stdDev > activeAnalysis.mean * 0.5 ? 'High spread' : 'Low spread', icon: <Sigma size={14} />, bg: '#f3e8ff', color: '#9333ea', down: activeAnalysis.stdDev > activeAnalysis.mean * 0.5 },
+                { key: 'variance', label: 'Variance (σ²)', value: formatNumber(activeAnalysis.variance), change: 'σ²', icon: <Activity size={14} />, bg: '#ffedd5', color: '#f97316' },
+                { key: 'min', label: 'Min', value: formatNumber(activeAnalysis.min), change: 'Lower bound', icon: <Minus size={14} />, bg: '#fee2e2', color: '#dc2626', down: true },
+                { key: 'max', label: 'Max', value: formatNumber(activeAnalysis.max), change: 'Upper bound', icon: <Plus size={14} />, bg: '#d1fae5', color: '#059669' },
+                { key: 'range', label: 'Range', value: formatNumber(activeAnalysis.range), change: 'Max–Min', icon: <BarChart3 size={14} />, bg: '#ede9fe', color: '#7c3aed' },
+                { key: 'trend', label: 'Trend', value: `${activeAnalysis.trendPercentage > 0 ? '+' : ''}${activeAnalysis.trendPercentage.toFixed(1)}%`, change: activeAnalysis.trend === 'up' ? 'Growing' : activeAnalysis.trend === 'down' ? 'Declining' : 'Stable', icon: activeAnalysis.trend === 'up' ? <TrendUpIcon size={14} /> : activeAnalysis.trend === 'down' ? <TrendingDown size={14} /> : <Activity size={14} />, bg: activeAnalysis.trend === 'up' ? '#dcfce7' : activeAnalysis.trend === 'down' ? '#fee2e2' : '#fffbeb', color: activeAnalysis.trend === 'up' ? '#16a34a' : activeAnalysis.trend === 'down' ? '#dc2626' : '#d97706', trendColor: activeAnalysis.trend },
+                { key: 'r2', label: 'R² Fit', value: activeAnalysis.linearRegression.r2.toFixed(4), change: activeAnalysis.linearRegression.r2 >= 0.7 ? 'Good fit' : 'Poor fit', icon: <LineChartIcon size={14} />, bg: activeAnalysis.linearRegression.r2 >= 0.7 ? '#dcfce7' : '#fee2e2', color: activeAnalysis.linearRegression.r2 >= 0.7 ? '#16a34a' : '#dc2626', down: activeAnalysis.linearRegression.r2 < 0.7 },
+                { key: 'cgr', label: 'CGR', value: `${activeAnalysis.compoundGrowthRate.toFixed(2)}%`, change: activeAnalysis.compoundGrowthRate >= 0 ? 'Growth' : 'Decline', icon: <TrendUpIcon size={14} />, bg: '#f0fdf4', color: '#16a34a', down: activeAnalysis.compoundGrowthRate < 0 },
+                { key: 'slope', label: 'Slope (m)', value: formatNumber(activeAnalysis.linearRegression.slope), change: activeAnalysis.linearRegression.slope >= 0 ? 'Positive' : 'Negative', icon: <Zap size={14} />, bg: '#ffedd5', color: '#f97316', down: activeAnalysis.linearRegression.slope < 0 },
+                { key: 'points', label: 'Data Points (n)', value: String(activeAnalysis.rawData.length), change: 'Samples', icon: <Hash size={14} />, bg: '#fce7f3', color: '#db2777', noFormula: true },
+              ].map(card => (
+                <div key={card.key} className={styles.analyticsKpiCard} onClick={() => !card.noFormula && setShowFormula(showFormula === card.key ? null : card.key)}>
+                  <span className={styles.analyticsKpiLabel}>
+                    {card.label}
+                    {!card.noFormula && <Info size={10} style={{ verticalAlign: 'middle', cursor: 'pointer', opacity: 0.5, marginLeft: 2 }} />}
+                  </span>
+                  <span className={`${styles.analyticsKpiValue} ${card.trendColor ? styles[`trend${card.trendColor.charAt(0).toUpperCase() + card.trendColor.slice(1)}`] : ''}`}>
+                    {card.value}
+                  </span>
+                  <span className={`${styles.analyticsKpiChange} ${card.down ? 'down' : 'up'}`}>
+                    {card.down ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
+                    {card.change}
+                  </span>
+                  <div className={styles.analyticsKpiIcon} style={{ background: card.bg, color: card.color }}>
+                    {card.icon}
                   </div>
-                  <div className={`${styles.statValue} ${
-                    activeAnalysis.trend === 'up' ? styles.trendUp :
-                    activeAnalysis.trend === 'down' ? styles.trendDown : styles.trendStable
-                  }`}>
-                    {activeAnalysis.trendPercentage > 0 ? '+' : ''}{activeAnalysis.trendPercentage.toFixed(1)}%
-                  </div>
+                  {showFormula === card.key && (
+                    <div className={styles.formulaTooltip}>{FORMULAS[card.key]?.formula || card.change}</div>
+                  )}
                 </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>R² Fit</div>
-                  <div className={styles.statValue}>{activeAnalysis.linearRegression.r2.toFixed(4)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>CGR</div>
-                  <div className={styles.statValue}>{activeAnalysis.compoundGrowthRate.toFixed(2)}%</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Slope</div>
-                  <div className={styles.statValue}>{formatNumber(activeAnalysis.linearRegression.slope)}</div>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statLabel}>Data Points</div>
-                  <div className={styles.statValue}>{activeAnalysis.rawData.length}</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* ── Forecast Panel ── */}
-          {forecastData.length > 0 && (
-            <div className={styles.chartPanel}>
-              <div className={styles.chartPanelTitle}>
-                <TrendingUp size={16} />
-                Forecast (Next {activeAnalysis.forecast.length} Periods)
+          {/* ── Value Across Locations ── */}
+          {locationBreakdownData.length > 0 && (
+            <div className={styles.chartCard}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h3>Value Across Locations</h3>
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+                    {activeColumn?.columnName} breakdown by location — Total, Average & Count
+                  </p>
+                </div>
+                <div className={styles.cardActions}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.78rem', color: '#64748b' }}>
+                    <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#16a34a', marginRight: 4 }} />Total</span>
+                    <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#22c55e', marginRight: 4 }} />Average</span>
+                    <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#86efac', marginRight: 4 }} />Count</span>
+                  </div>
+                  <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+                </div>
               </div>
-              <div className={styles.chartWrapper}>
-                <ResponsiveContainer width="100%" height={220}>
-                  <ReLineChart data={forecastData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-                    <Tooltip {...tooltipStyle} />
-                    <Legend iconType="circle" iconSize={8} />
-                    <Line type="monotone" dataKey="actual" stroke="#16a34a" strokeWidth={2} dot={{ r: 2 }} name="Actual" />
-                    <Line type="monotone" dataKey="forecast" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: '#f97316' }} name="Forecast" />
-                  </ReLineChart>
-                </ResponsiveContainer>
-              </div>
+              {renderLocationChart()}
             </div>
           )}
 
+          {/* ── Main Grid: Forecast + Regional + Market Survey ── */}
+          <div className={styles.mainGrid}>
+            <div className={styles.mainChartCol}>
+              {forecastData.length > 0 && (
+                <div className={styles.chartCard}>
+                  <div className={styles.cardHeader}>
+                    <h3>Forecast (Next {activeAnalysis.forecast.length} Periods)</h3>
+                    <div className={styles.cardActions}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.78rem', color: '#64748b' }}>
+                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#16a34a', marginRight: 4 }} />Actual</span>
+                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#f97316', marginRight: 4 }} />Forecast</span>
+                      </div>
+                      <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+                    </div>
+                  </div>
+                  <div className={styles.formulaHint}><Info size={10} /> {FORMULAS.forecast.formula}</div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ReLineChart data={forecastData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                      <Tooltip {...tooltipStyle} formatter={(v: any) => [v !== null && v !== undefined ? formatNumber(Number(v)) : '-', '']} />
+                      <Legend iconType="circle" iconSize={8} />
+                      <Line type="monotone" dataKey="actual" stroke="#16a34a" strokeWidth={2} dot={{ r: 2 }} name="Actual" />
+                      <Line type="monotone" dataKey="forecast" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: '#f97316' }} name="Forecast" />
+                    </ReLineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+            <div className={styles.sidePanelsCol}>
+              {regionalDistData.length > 0 && (
+                <div className={styles.chartCard}>
+                  <div className={styles.cardHeader}>
+                    <h3>Regional Distribution</h3>
+                    <div className={styles.cardActions}><button className={styles.moreBtn}><MoreHorizontal size={16} /></button></div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={150}>
+                    <RePieChart>
+                      <Pie data={regionalDistData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} dataKey="value" paddingAngle={4}>
+                        {regionalDistData.map((_, i) => <Cell key={i} fill={SURVEY_COLORS[i % SURVEY_COLORS.length]} stroke="none" />)}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e8eaf0', fontSize: 13 }} />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                  <div className={styles.regionLegend}>
+                    {regionalDistData.map((r: any, i: number) => (
+                      <div key={r.name} className={styles.regionItem}>
+                        <span className={styles.regionDot} style={{ background: SURVEY_COLORS[i % SURVEY_COLORS.length] }} />
+                        <span className={styles.regionName}>{r.name}</span>
+                        <span className={styles.regionValue}>{formatNumber(r.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {marketSurveyData.length > 0 && (
+                <div className={styles.chartCard}>
+                  <div className={styles.cardHeader}>
+                    <h3>Column Comparison Scores</h3>
+                    <div className={styles.cardActions}><button className={styles.moreBtn}><MoreHorizontal size={16} /></button></div>
+                  </div>
+                  <div className={styles.surveyList}>
+                    {marketSurveyData.map((item: any) => (
+                      <div key={item.category} className={styles.surveyItem}>
+                        <div className={styles.surveyHeader}>
+                          <TrendingUp size={13} strokeWidth={2} color="#16a34a" />
+                          <span className={styles.surveyCategory}>{item.category}</span>
+                          <span className={styles.surveyRevenue}>{item.category === activeColumn?.columnName ? '★ Selected' : `$${item.revenue}K`}</span>
+                        </div>
+                        <div className={styles.surveyBarTrack}>
+                          <div className={styles.surveyBarFill} style={{ width: `${item.satisfaction}%` }} />
+                        </div>
+                        <span className={styles.surveyPercent}>{item.satisfaction}% R²/Trend score</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* ── Data Table ── */}
           {filteredData.length > 0 && (
-            <div className={styles.chartPanel}>
-              <div className={styles.chartPanelTitle}>
-                <Table2 size={16} />
-                Data View ({filteredData.length} rows)
+            <div className={styles.chartCard}>
+              <div className={styles.cardHeader}>
+                <h3>Data View ({filteredData.length} rows)</h3>
+                <div className={styles.cardActions}>
+                  <div className={styles.formulaHint} style={{ marginRight: 8 }}><Info size={10} /> {FORMULAS.movingAvg.formula}</div>
+                  <button className={styles.viewAll}>View All</button>
+                </div>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className={styles.dataTable}>
@@ -582,7 +708,8 @@ export default function AnalyticalPage() {
                       <th>#</th>
                       <th>Label</th>
                       <th>Value</th>
-                      {activeAnalysis && <th>Moving Avg</th>}
+                      {activeAnalysis && <th>Moving Avg (w=3)</th>}
+                      {activeAnalysis && <th>Growth Rate</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -592,6 +719,9 @@ export default function AnalyticalPage() {
                         <td>{row.label}</td>
                         <td>{formatNumber(row.value)}</td>
                         {activeAnalysis && <td>{row.movingAvg !== null ? formatNumber(row.movingAvg) : '-'}</td>}
+                        {activeAnalysis && (
+                          <td>{activeAnalysis.growthRate[i] !== undefined ? (activeAnalysis.growthRate[i] >= 0 ? '+' : '') + activeAnalysis.growthRate[i].toFixed(1) + '%' : '-'}</td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -599,6 +729,59 @@ export default function AnalyticalPage() {
               </div>
             </div>
           )}
+
+          {/* ── Recent Data Entries ── */}
+          {recentTransactions.length > 0 && (
+            <div className={styles.chartCard}>
+              <div className={styles.cardHeader}>
+                <h3>Recent Data Entries</h3>
+                <div className={styles.cardActions}><button className={styles.viewAll}>View All</button></div>
+              </div>
+              <div className={styles.transactionTable}>
+                <div className={styles.tableHeader}>
+                  <span>#</span>
+                  <span>Identifier</span>
+                  <span>Value</span>
+                  <span>Status</span>
+                  <span>Date</span>
+                </div>
+                {recentTransactions.map((tx, i) => (
+                  <div key={i} className={styles.tableRow}>
+                    <span className={styles.invoiceId}>{tx.id}</span>
+                    <span className={styles.customerName}>{tx.customer}</span>
+                    <span className={styles.amount}>{formatNumber(tx.amount)}</span>
+                    <span className={`${styles.status} ${styles[tx.status?.toLowerCase() || 'completed']}`}>
+                      {tx.status === 'Completed' && <CheckCircle2 size={12} />}
+                      {tx.status === 'Processing' && <Activity size={12} />}
+                      {tx.status === 'Pending' && <Clock size={12} />}
+                      {tx.status || 'Completed'}
+                    </span>
+                    <span className={styles.date}>{tx.date}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Formula Reference ── */}
+          <div className={styles.chartCard}>
+            <div className={styles.cardHeader}>
+              <h3>Formula Reference</h3>
+              <div className={styles.cardActions}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>
+                  Click <Info size={10} style={{ verticalAlign: 'middle' }} /> icon on any metric card
+                </span>
+              </div>
+            </div>
+            <div className={styles.formulaGrid}>
+              {Object.entries(FORMULAS).map(([key, val]) => (
+                <div key={key} className={styles.formulaItem}>
+                  <span className={styles.formulaItemLabel}>{val.label}</span>
+                  <span className={styles.formulaItemFormula}>{val.formula}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </>
       ) : (
         <div className={styles.emptyState}>

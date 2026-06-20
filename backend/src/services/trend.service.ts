@@ -38,6 +38,16 @@ export interface UploadedData {
   numericColumns: string[]
   analysis: Record<string, TrendResult>
   rawPreview: Record<string, any>[]
+  /** Schedule type: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' */
+  schedule?: string
+  /** When the schedule was last updated (for tracking) */
+  lastScheduledUpdate?: string
+  /** Accumulated raw data for scheduled datasets (merged over time) */
+  accumulatedData?: Record<string, any>[]
+  /** location columns detected */
+  locationColumns?: string[]
+  /** Per-location analysis (keyed by location value) */
+  locationAnalysis?: Record<string, Record<string, TrendResult>>
 }
 
 // Store datasets per user: Map<userId, UploadedData[]>
@@ -300,13 +310,21 @@ function extractLabels(records: Record<string, any>[]): string[] {
   return records.map((_, i) => `Point ${i + 1}`)
 }
 
+function detectLocationColumns(records: Record<string, any>[]): string[] {
+  if (records.length === 0) return []
+  return Object.keys(records[0]).filter(k =>
+    /place|location|region|city|country|state|area|zone|branch|office|store|dept/i.test(k)
+  )
+}
+
 export function processUpload(
   userId: string,
   id: string,
   fileName: string,
   fileType: string,
   content: string,
-  buffer?: Buffer
+  buffer?: Buffer,
+  schedule?: string,
 ): UploadedData {
   let records: Record<string, any>[]
 
@@ -323,6 +341,31 @@ export function processUpload(
   const columnNames = records.length > 0 ? Object.keys(records[0]) : []
   const numericColumns = detectNumericColumns(records)
   const labels = extractLabels(records)
+  const locationColumns = detectLocationColumns(records)
+
+  // Build per-location analysis
+  const locationAnalysis: Record<string, Record<string, TrendResult>> = {}
+  if (locationColumns.length > 0) {
+    const locCol = locationColumns[0]
+    const locationGroups: Record<string, Record<string, any>[]> = {}
+    records.forEach(r => {
+      const loc = String(r[locCol] ?? 'Unknown')
+      if (!locationGroups[loc]) locationGroups[loc] = []
+      locationGroups[loc].push(r)
+    })
+    Object.entries(locationGroups).forEach(([loc, locRecords]) => {
+      const locAnalysis: Record<string, TrendResult> = {}
+      numericColumns.forEach(col => {
+        const values = locRecords.map(r => parseNumericValue(r[col])).filter((n): n is number => n !== null)
+        if (values.length > 1) {
+          locAnalysis[col] = analyzeColumn(values, locRecords.map((_, i) => `#${i + 1}`))
+        }
+      })
+      if (Object.keys(locAnalysis).length > 0) {
+        locationAnalysis[loc] = locAnalysis
+      }
+    })
+  }
 
   const analysis: Record<string, TrendResult> = {}
   numericColumns.forEach(col => {
@@ -343,6 +386,11 @@ export function processUpload(
     numericColumns,
     analysis,
     rawPreview: records.slice(0, 50),
+    schedule: schedule || 'none',
+    lastScheduledUpdate: schedule && schedule !== 'none' ? new Date().toISOString() : undefined,
+    accumulatedData: records,
+    locationColumns,
+    locationAnalysis,
   }
 
   const datasets = getUserDatasets(userId)
@@ -350,6 +398,134 @@ export function processUpload(
   if (datasets.length > 50) datasets.pop()
 
   return uploaded
+}
+
+/**
+ * Append new data to an existing scheduled dataset
+ * Merges records and re-analyzes all columns
+ */
+export function appendToDataset(
+  userId: string,
+  datasetId: string,
+  content: string,
+  fileType: string,
+  buffer?: Buffer,
+): UploadedData | null {
+  const datasets = getUserDatasets(userId)
+  const existing = datasets.find(d => d.id === datasetId)
+  if (!existing) return null
+
+  let newRecords: Record<string, any>[]
+  if (fileType === 'csv') {
+    newRecords = parseCSV(content)
+  } else if (fileType === 'json') {
+    newRecords = parseJSON(content)
+  } else if (fileType === 'xlsx' || fileType === 'xls') {
+    newRecords = buffer ? parseExcel(buffer) : parseText(content)
+  } else {
+    newRecords = parseText(content)
+  }
+
+  if (newRecords.length === 0) return null
+
+  // Merge accumulated data (append new records)
+  const allRecords = [...(existing.accumulatedData || existing.rawPreview), ...newRecords]
+  existing.accumulatedData = allRecords
+
+  // Update row count
+  existing.rowCount = allRecords.length
+
+  // Re-analyze all numeric columns
+  const labels = extractLabels(allRecords)
+  existing.numericColumns.forEach(col => {
+    const values = allRecords.map(r => parseNumericValue(r[col])).filter((n): n is number => n !== null)
+    if (values.length > 1) {
+      existing.analysis[col] = analyzeColumn(values, labels.slice(0, values.length))
+    }
+  })
+
+  // Re-build per-location analysis
+  const locationColumns = existing.locationColumns || []
+  if (locationColumns.length > 0) {
+    const locCol = locationColumns[0]
+    const locationGroups: Record<string, Record<string, any>[]> = {}
+    allRecords.forEach(r => {
+      const loc = String(r[locCol] ?? 'Unknown')
+      if (!locationGroups[loc]) locationGroups[loc] = []
+      locationGroups[loc].push(r)
+    })
+    const locationAnalysis: Record<string, Record<string, TrendResult>> = {}
+    Object.entries(locationGroups).forEach(([loc, locRecords]) => {
+      const locAnalysis: Record<string, TrendResult> = {}
+      existing.numericColumns.forEach(col => {
+        const values = locRecords.map(r => parseNumericValue(r[col])).filter((n): n is number => n !== null)
+        if (values.length > 1) {
+          locAnalysis[col] = analyzeColumn(values, locRecords.map((_, i) => `#${i + 1}`))
+        }
+      })
+      if (Object.keys(locAnalysis).length > 0) {
+        locationAnalysis[loc] = locAnalysis
+      }
+    })
+    existing.locationAnalysis = locationAnalysis
+  }
+
+  // Update rawPreview
+  existing.rawPreview = allRecords.slice(0, 50)
+  existing.lastScheduledUpdate = new Date().toISOString()
+
+  // Re-detect numeric columns (in case new data adds columns)
+  const newNumericCols = detectNumericColumns(allRecords)
+  newNumericCols.forEach(col => {
+    if (!existing.numericColumns.includes(col)) {
+      existing.numericColumns.push(col)
+      const values = allRecords.map(r => parseNumericValue(r[col])).filter((n): n is number => n !== null)
+      if (values.length > 1) {
+        existing.analysis[col] = analyzeColumn(values, labels.slice(0, values.length))
+      }
+    }
+  })
+
+  return existing
+}
+
+/**
+ * Get analysis filtered by a specific location
+ */
+export function getAnalysisByLocation(
+  userId: string,
+  datasetId: string,
+  location: string,
+): Record<string, TrendResult> | null {
+  const datasets = getUserDatasets(userId)
+  const dataset = datasets.find(d => d.id === datasetId)
+  if (!dataset) return null
+
+  // If we have pre-computed location analysis
+  if (dataset.locationAnalysis && dataset.locationAnalysis[location]) {
+    return dataset.locationAnalysis[location]
+  }
+
+  // Fallback: filter rawPreview and compute on the fly
+  const locationColumns = dataset.locationColumns || []
+  if (locationColumns.length === 0) return null
+
+  const locCol = locationColumns[0]
+  const records = (dataset.accumulatedData || dataset.rawPreview).filter(
+    r => String(r[locCol] ?? '') === location
+  )
+
+  if (records.length < 2) return null
+
+  const labels = extractLabels(records)
+  const analysis: Record<string, TrendResult> = {}
+  dataset.numericColumns.forEach(col => {
+    const values = records.map(r => parseNumericValue(r[col])).filter((n): n is number => n !== null)
+    if (values.length > 1) {
+      analysis[col] = analyzeColumn(values, labels.slice(0, values.length))
+    }
+  })
+  return analysis
 }
 
 export function getAllDatasets(userId: string): UploadedData[] {

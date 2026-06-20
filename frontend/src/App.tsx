@@ -31,6 +31,7 @@ import AnalyticalPage from '@/pages/analytics/AnalyticalPage'
 import ForecastingPage from '@/pages/ai/ForecastingPage'
 import TrendsPage from '@/pages/ai/TrendsPage'
 import RecommendationsPage from '@/pages/ai/RecommendationsPage'
+import AIAnalysisCenter from '@/pages/ai/AIAnalysisCenter'
 import ReportsPage from '@/pages/reports/ReportsPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import ProfilePage from '@/pages/ProfilePage'
@@ -85,6 +86,7 @@ export default function App() {
                 <Route path="/ai/forecasting" element={<ForecastingPage />} />
                 <Route path="/ai/trends" element={<TrendsPage />} />
                 <Route path="/ai/recommendations" element={<RecommendationsPage />} />
+                <Route path="/ai/analysis-center" element={<AIAnalysisCenter />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />

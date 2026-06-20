@@ -26,6 +26,7 @@ interface AnalyzedColumn {
 const nav = [
   {
     label: 'AI Features', icon: Brain, children: [
+      { label: 'AI Analysis Center', to: '/ai/analysis-center', icon: Brain },
       { label: 'Forecasting', to: '/ai/forecasting', icon: TrendingUp },
       { label: 'Trends', to: '/ai/trends', icon: BarChart2 },
       { label: 'Recommendations', to: '/ai/recommendations', icon: Zap },

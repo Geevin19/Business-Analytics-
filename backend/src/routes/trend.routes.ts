@@ -7,6 +7,8 @@ import {
   getDatasetById,
   deleteDataset,
   clearAllDatasets,
+  appendToDataset,
+  getAnalysisByLocation,
   UploadedData,
 } from '../services/trend.service'
 
@@ -49,8 +51,9 @@ router.post('/upload', authenticate, (req: AuthRequest, res: Response) => {
       const isExcel = fileType === 'xlsx' || fileType === 'xls'
       const content = isExcel ? '' : file.buffer.toString('utf-8')
       const buffer = isExcel ? file.buffer : undefined
+      const schedule = (req.query.schedule as string) || (req.body.schedule as string) || 'none'
 
-      const result = processUpload(userId, id, fileName, fileType, content, buffer)
+      const result = processUpload(userId, id, fileName, fileType, content, buffer, schedule)
       res.json(result)
     })
   } catch (error: any) {
@@ -60,18 +63,29 @@ router.post('/upload', authenticate, (req: AuthRequest, res: Response) => {
 
 router.post('/upload-data', authenticate, (req: AuthRequest, res: Response) => {
   try {
-    const { fileName, fileType, content } = req.body
+    const { fileName, fileType, content, schedule, appendTo } = req.body
 
     if (!content) {
       return res.status(400).json({ message: 'No content provided' })
     }
 
     const userId = getUserId(req)
+
+    // If appending to an existing dataset
+    if (appendTo) {
+      const updated = appendToDataset(userId, appendTo, content, fileType || 'json')
+      if (!updated) {
+        return res.status(404).json({ message: 'Dataset not found' })
+      }
+      return res.json(updated)
+    }
+
     const id = generateId()
     const name = fileName || `data_${id.slice(0, 8)}`
     const type = fileType || 'json'
+    const sched = schedule || 'none'
 
-    const result = processUpload(userId, id, name, type, content)
+    const result = processUpload(userId, id, name, type, content, undefined, sched)
     res.json(result)
   } catch (error: any) {
     res.status(500).json({ message: error.message || 'Upload failed' })
@@ -89,6 +103,79 @@ router.get('/datasets/:id', authenticate, async (req: AuthRequest, res: Response
   if (!dataset) {
     return res.status(404).json({ message: 'Dataset not found' })
   }
+  res.json(dataset)
+})
+
+/**
+ * Get analysis filtered by location
+ * GET /trend/datasets/:id/location/:locationName
+ */
+router.get('/datasets/:id/location/:locationName', authenticate, async (req: AuthRequest, res: Response) => {
+  const userId = getUserId(req)
+  const analysis = getAnalysisByLocation(userId, req.params.id, req.params.locationName)
+  if (!analysis) {
+    return res.status(404).json({ message: 'No data found for this location' })
+  }
+  res.json(analysis)
+})
+
+/**
+ * Append data to a scheduled dataset
+ * POST /trend/datasets/:id/append
+ */
+router.post('/datasets/:id/append', authenticate, (req: AuthRequest, res: Response) => {
+  try {
+    upload.single('file')(req as any, res as any, (err: any) => {
+      if (err) {
+        return res.status(400).json({ message: err.message || 'Upload failed' })
+      }
+
+      const file = (req as any).file
+      const userId = getUserId(req)
+
+      let content = ''
+      let fileType = 'json'
+      let buffer: Buffer | undefined
+
+      if (file) {
+        const fileName = file.originalname
+        fileType = getFileType(fileName)
+        const isExcel = fileType === 'xlsx' || fileType === 'xls'
+        content = isExcel ? '' : file.buffer.toString('utf-8')
+        buffer = isExcel ? file.buffer : undefined
+      } else {
+        content = req.body.content
+        fileType = req.body.fileType || 'json'
+      }
+
+      if (!content && !buffer) {
+        return res.status(400).json({ message: 'No content provided' })
+      }
+
+      const updated = appendToDataset(userId, req.params.id, content, fileType, buffer)
+      if (!updated) {
+        return res.status(404).json({ message: 'Dataset not found' })
+      }
+      res.json(updated)
+    })
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Append failed' })
+  }
+})
+
+/**
+ * Update schedule for a dataset
+ * PUT /trend/datasets/:id/schedule
+ */
+router.put('/datasets/:id/schedule', authenticate, (req: AuthRequest, res: Response) => {
+  const userId = getUserId(req)
+  const datasets = getAllDatasets(userId)
+  const dataset = datasets.find(d => d.id === req.params.id)
+  if (!dataset) {
+    return res.status(404).json({ message: 'Dataset not found' })
+  }
+  dataset.schedule = req.body.schedule || 'none'
+  dataset.lastScheduledUpdate = new Date().toISOString()
   res.json(dataset)
 })
 

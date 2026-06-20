@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Upload, FileText, Database, TrendingUp, TrendingDown,
   Activity, BarChart3, Trash2, Table, AlertCircle,
-  FileSpreadsheet, FileJson
+  FileSpreadsheet, FileJson, Clock
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -45,6 +45,8 @@ interface UploadedDataset {
   numericColumns: string[]
   analysis: Record<string, TrendResult>
   rawPreview: Record<string, any>[]
+  schedule?: string
+  lastScheduledUpdate?: string
 }
 
 /* ── Helpers ── */
@@ -75,6 +77,9 @@ export default function UserDataPage() {
   const [uploading, setUploading] = useState(false)
   const [pasteContent, setPasteContent] = useState('')
   const [dragOver, setDragOver] = useState(false)
+  const [schedule, setSchedule] = useState<'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'>('none')
+  const [appendMode, setAppendMode] = useState(false)
+  const [appendTargetId, setAppendTargetId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load datasets
@@ -92,7 +97,7 @@ export default function UserDataPage() {
 
   useEffect(() => { loadDatasets() }, [loadDatasets])
 
-  // Auto-select dataset from URL query param (e.g. ?dataset=filename.csv)
+  // Auto-select dataset from URL query param
   useEffect(() => {
     const datasetName = searchParams.get('dataset')
     if (datasetName && datasets.length > 0) {
@@ -108,7 +113,6 @@ export default function UserDataPage() {
   const activeColumn = selectedColumn || selectedDataset?.numericColumns[0] || null
   const activeAnalysis = activeColumn && selectedDataset?.analysis[activeColumn] || null
 
-  // Dispatch custom event to notify sidebar of changes
   const notifyDatasetsChanged = () => {
     window.dispatchEvent(new CustomEvent('datasets-changed'))
   }
@@ -120,8 +124,12 @@ export default function UserDataPage() {
 
     try {
       setUploading(true)
+      const params: any = {}
+      if (schedule !== 'none') params.schedule = schedule
+
       const res = await api.post('/trend/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        params,
       })
       setDatasets(prev => [res.data, ...prev])
       setSelectedId(res.data.id)
@@ -141,16 +149,30 @@ export default function UserDataPage() {
       setUploading(true)
       const isJson = pasteContent.trim().startsWith('[') || pasteContent.trim().startsWith('{')
       const type = isJson ? 'json' : 'csv'
-      const res = await api.post('/trend/upload-data', {
-        content: pasteContent,
-        fileName: `pasted_${Date.now()}.${type}`,
-        fileType: type,
-      })
-      setDatasets(prev => [res.data, ...prev])
-      setSelectedId(res.data.id)
-      setSelectedColumn(res.data.numericColumns[0] || null)
+
+      // Append mode: send to append endpoint
+      if (appendMode && appendTargetId) {
+        const res = await api.post(`/trend/datasets/${appendTargetId}/append`, {
+          content: pasteContent,
+          fileType: type,
+        })
+        // Update the dataset in the list
+        setDatasets(prev => prev.map(d => d.id === res.data.id ? res.data : d))
+        setSelectedId(res.data.id)
+        notifyDatasetsChanged()
+      } else {
+        const res = await api.post('/trend/upload-data', {
+          content: pasteContent,
+          fileName: `pasted_${Date.now()}.${type}`,
+          fileType: type,
+          schedule: schedule !== 'none' ? schedule : undefined,
+        })
+        setDatasets(prev => [res.data, ...prev])
+        setSelectedId(res.data.id)
+        setSelectedColumn(res.data.numericColumns[0] || null)
+        notifyDatasetsChanged()
+      }
       setPasteContent('')
-      notifyDatasetsChanged()
     } catch (err) {
       console.error('Upload failed', err)
     } finally {
@@ -190,6 +212,15 @@ export default function UserDataPage() {
     setDragOver(false)
     const file = e.dataTransfer.files[0]
     if (file) handleFileUpload(file)
+  }
+
+  const handleUpdateSchedule = async (dsId: string, newSchedule: string) => {
+    try {
+      const res = await api.put(`/trend/datasets/${dsId}/schedule`, { schedule: newSchedule })
+      setDatasets(prev => prev.map(d => d.id === res.data.id ? res.data : d))
+    } catch (err) {
+      console.error('Failed to update schedule', err)
+    }
   }
 
   // ── Chart data builders ──
@@ -237,6 +268,54 @@ export default function UserDataPage() {
         <div className={styles.uploadCard}>
           <h3>Upload Your Data</h3>
 
+          {/* ── Schedule Selection ── */}
+          <div className={styles.scheduleRow}>
+            <span className={styles.scheduleLabel}>Schedule:</span>
+            {(['none', 'daily', 'weekly', 'monthly', 'yearly'] as const).map(s => (
+              <button
+                key={s}
+                className={`${styles.scheduleBtn} ${schedule === s ? styles.active : ''}`}
+                onClick={() => setSchedule(s)}
+                type="button"
+              >
+                {s === 'none' ? 'No Schedule' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+          {schedule !== 'none' && (
+            <div className={styles.scheduleHint}>
+              <Clock size={12} /> Data will accumulate over time. Each upload appends to this dataset for continuous trend analysis.
+            </div>
+          )}
+
+          {/* ── Append Mode Toggle ── */}
+          {datasets.length > 0 && (
+            <div className={styles.appendRow}>
+              <label className={styles.appendToggle}>
+                <input
+                  type="checkbox"
+                  checked={appendMode}
+                  onChange={() => setAppendMode(!appendMode)}
+                />
+                <span>Append to existing dataset</span>
+              </label>
+              {appendMode && (
+                <select
+                  className={styles.appendSelect}
+                  value={appendTargetId || ''}
+                  onChange={(e) => setAppendTargetId(e.target.value || null)}
+                >
+                  <option value="">Select dataset...</option>
+                  {datasets.map(ds => (
+                    <option key={ds.id} value={ds.id}>
+                      {ds.fileName} ({ds.rowCount} rows{ds.schedule && ds.schedule !== 'none' ? `, ${ds.schedule}` : ''})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
           {/* Drop zone */}
           <div
             className={`${styles.dropZone} ${dragOver ? styles.dragging : ''}`}
@@ -271,14 +350,16 @@ export default function UserDataPage() {
             onChange={(e) => setPasteContent(e.target.value)}
             rows={6}
           />
-          <button
-            className={styles.uploadBtn}
-            onClick={handlePasteUpload}
-            disabled={!pasteContent.trim() || uploading}
-          >
-            {uploading ? <><div className={styles.spinner} style={{ width: 16, height: 16 }} /> Analyzing...</>
-              : <><Upload size={16} /> Analyze Data</>}
-          </button>
+          <div className={styles.uploadRow}>
+            <button
+              className={styles.uploadBtn}
+              onClick={handlePasteUpload}
+              disabled={!pasteContent.trim() || uploading}
+            >
+              {uploading ? <><div className={styles.spinner} style={{ width: 16, height: 16 }} /> Analyzing...</>
+                : <><Upload size={16} /> {appendMode && appendTargetId ? 'Append Data' : 'Analyze Data'}</>}
+            </button>
+          </div>
         </div>
 
         {/* Right: Datasets List */}
@@ -320,9 +401,15 @@ export default function UserDataPage() {
                   {getFileIcon(ds.fileType)}
                 </div>
                 <div className={styles.datasetInfo}>
-                  <div className={styles.datasetName}>{ds.fileName}</div>
+                  <div className={styles.datasetName}>
+                    {ds.fileName}
+                    {ds.schedule && ds.schedule !== 'none' && (
+                      <span className={styles.datasetSchedule}>{ds.schedule}</span>
+                    )}
+                  </div>
                   <div className={styles.datasetMeta}>
                     {ds.rowCount} rows - {ds.numericColumns.length} numeric cols - {formatDate(ds.uploadedAt)}
+                    {ds.lastScheduledUpdate && ` · Updated: ${formatDate(ds.lastScheduledUpdate)}`}
                   </div>
                 </div>
                 <div className={styles.datasetActions}>
@@ -358,6 +445,19 @@ export default function UserDataPage() {
               ))}
             </div>
           </div>
+
+          {/* Schedule Info */}
+          {selectedDataset.schedule && selectedDataset.schedule !== 'none' && (
+            <div className={styles.scheduleInfoRow}>
+              <Clock size={13} />
+              <span>Scheduled: <strong>{selectedDataset.schedule}</strong> — Data accumulates for longer trend analysis</span>
+              {selectedDataset.lastScheduledUpdate && (
+                <span className={styles.scheduleLastUpdate}>
+                  Last update: {formatDate(selectedDataset.lastScheduledUpdate)}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Stats Grid */}
           <div className={styles.statsGrid}>
@@ -473,32 +573,38 @@ export default function UserDataPage() {
             <div className={styles.infoBox}>
               <div className={styles.infoBoxLabel}>R2 (Goodness of Fit)</div>
               <div className={styles.infoBoxValue}>{activeAnalysis.linearRegression.r2.toFixed(4)}</div>
+              <div className={styles.statHint}>Formula: R² = 1 - SS_res/SS_tot</div>
             </div>
             <div className={styles.infoBox}>
               <div className={styles.infoBoxLabel}>Slope</div>
               <div className={styles.infoBoxValue}>{formatNumber(activeAnalysis.linearRegression.slope)}</div>
+              <div className={styles.statHint}>m = (nΣxy - ΣxΣy)/(nΣx² - (Σx)²)</div>
             </div>
             <div className={styles.infoBox}>
               <div className={styles.infoBoxLabel}>Intercept</div>
               <div className={styles.infoBoxValue}>{formatNumber(activeAnalysis.linearRegression.intercept)}</div>
+              <div className={styles.statHint}>b = ȳ - m·x̄</div>
             </div>
             <div className={styles.infoBox}>
               <div className={styles.infoBoxLabel}>Compound Growth Rate</div>
               <div className={styles.infoBoxValue}>{activeAnalysis.compoundGrowthRate.toFixed(2)}%</div>
+              <div className={styles.statHint}>CGR = ((Vₙ/V₀)^(1/(n-1)) - 1) × 100</div>
             </div>
             <div className={styles.infoBox}>
               <div className={styles.infoBoxLabel}>Mode</div>
               <div className={styles.infoBoxValue}>
                 {activeAnalysis.mode.length > 0 ? activeAnalysis.mode.map(m => formatNumber(m)).join(', ') : 'N/A'}
               </div>
+              <div className={styles.statHint}>Most frequent value(s)</div>
             </div>
             <div className={styles.infoBox}>
               <div className={styles.infoBoxLabel}>Seasonal Index</div>
               <div className={styles.infoBoxValue}>
                 {activeAnalysis.seasonalIndex.length > 0
                   ? activeAnalysis.seasonalIndex.map(s => s.toFixed(1) + '%').join(', ')
-                  : 'Insufficient data (< 8 periods)'}
+                  : 'Need ≥ 8 periods'}
               </div>
+              <div className={styles.statHint}>Sᵢ = (avg of period / overall mean) × 100</div>
             </div>
           </div>
 

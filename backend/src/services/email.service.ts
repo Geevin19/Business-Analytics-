@@ -3,6 +3,7 @@ import type { Transporter } from 'nodemailer'
 
 const GMAIL_USER = process.env.GMAIL_USER!
 const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD!
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
 
 let transporter: Transporter
 
@@ -107,7 +108,7 @@ export async function sendWelcomeEmail(to: string, name: string, verificationLin
       Your BizAnalytics account is ready. Monitor KPIs, track sales, generate reports,
       and get AI-powered insights — all in one dashboard.
     </p>
-    ${btn('http://localhost:3000/dashboard', 'Open My Dashboard')}
+    ${btn(`${FRONTEND_URL}/dashboard`, 'Open My Dashboard')}
     <p style="margin:24px 0 0;color:rgba(241,245,249,0.25);font-size:12px">
       If you didn't create this account, ignore this email.
     </p>`
@@ -138,7 +139,7 @@ export async function sendLoginAlertEmail(to: string, name: string) {
     <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:rgba(241,245,249,0.7)">
       <div><strong style="color:#f1f5f9">Time:</strong> ${time}</div>
     </div>
-    ${btn('http://localhost:3000/auth/forgot-password', 'Secure My Account')}
+    ${btn(`${FRONTEND_URL}/auth/forgot-password`, 'Secure My Account')}
     <p style="margin:20px 0 0;color:rgba(241,245,249,0.25);font-size:12px">If this was you, no action needed.</p>
   `), 'login-alert')
 }
@@ -147,6 +148,6 @@ export async function sendNotificationEmail(to: string, title: string, message: 
   await safeSend(to, `BizAnalytics — ${title}`, base(`
     <h2 style="margin:0 0 12px;font-size:20px;color:#f1f5f9">${title}</h2>
     <p style="margin:0 0 20px;color:rgba(241,245,249,0.65);line-height:1.7;font-size:14px">${message}</p>
-    ${btn('http://localhost:3000/notifications', 'View Notifications')}
+    ${btn(`${FRONTEND_URL}/notifications`, 'View Notifications')}
   `), 'notification')
 }

@@ -155,7 +155,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       await sendPasswordResetEmail(email, linkData.properties.action_link)
     } else {
       // Fallback: send generic link
-      const fallbackLink = `http://localhost:3000/auth/reset-password`
+      const fallbackLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password`
       await sendPasswordResetEmail(email, fallbackLink)
     }
   } catch (e) {

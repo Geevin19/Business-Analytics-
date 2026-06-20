@@ -6,7 +6,7 @@ import {
   MapPin, Search, Bell, Download, RefreshCcw
 } from 'lucide-react'
 import {
-  AreaChart, Area, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
 import styles from './DashboardPage.module.css'
@@ -14,6 +14,17 @@ import { getDashboard, getSales } from '@/services/admin.service'
 import api from '@/services/api'
 
 const SURVEY_COLORS = ['#16a34a', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6']
+const ttip = { contentStyle: { borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: 13 } }
+const axis = { axisLine: false as const, tickLine: false as const }
+
+// Static fallback location data
+const LOCATION_DATA = [
+  { location: 'North', revenue: 8400, orders: 420, customers: 310 },
+  { location: 'South', revenue: 6200, orders: 310, customers: 240 },
+  { location: 'East', revenue: 5100, orders: 255, customers: 198 },
+  { location: 'West', revenue: 3800, orders: 190, customers: 147 },
+  { location: 'Capital', revenue: 2900, orders: 145, customers: 112 },
+]
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all')
@@ -98,6 +109,26 @@ export default function DashboardPage() {
     { category: 'Product D', satisfaction: 88, revenue: 52 },
     { category: 'Product E', satisfaction: 71, revenue: 19 },
   ]
+
+  const placeValuesByRegion: Record<'all' | 'us' | 'eu' | 'asia', typeof LOCATION_DATA> = {
+    all: LOCATION_DATA,
+    us: [
+      { location: 'North', revenue: 7600, orders: 340, customers: 250 },
+      { location: 'South', revenue: 5400, orders: 240, customers: 190 },
+      { location: 'East', revenue: 4500, orders: 190, customers: 150 },
+    ],
+    eu: [
+      { location: 'West', revenue: 3800, orders: 180, customers: 140 },
+      { location: 'Capital', revenue: 2900, orders: 140, customers: 110 },
+    ],
+    asia: [
+      { location: 'North', revenue: 7200, orders: 320, customers: 260 },
+      { location: 'East', revenue: 5100, orders: 240, customers: 180 },
+      { location: 'West', revenue: 3900, orders: 170, customers: 130 },
+    ],
+  }
+
+  const locationChartData = placeValuesByRegion[location]
 
   return (
     <div className={styles.page}>
@@ -191,7 +222,79 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Statistics Summary (Vertical Grid) ── */}
+      {/* ── Overview Chart: Value over Time (between filter and KPIs) ── */}
+      <div className={styles.chartCard}>
+        <div className={styles.cardHeader}>
+          <div>
+            <h3>Dashboard Overview — {selectedChart} Chart</h3>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>Showing {periodLabels[period].toLowerCase()} data</p>
+          </div>
+          <div className={styles.cardActions}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.78rem', color: '#64748b' }}>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#16a34a', marginRight: 4 }} />Revenue</span>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e', marginRight: 4 }} />Profit</span>
+            </div>
+            <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={220}>
+          {selectedChart === 'Area' && (
+            <AreaChart data={revenueData}>
+              <defs>
+                <linearGradient id="ot1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="ot2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <Tooltip {...ttip} formatter={(v: number) => `$${v.toLocaleString()}K`} />
+              <Area type="monotone" dataKey="revenue" stroke="#16a34a" fill="url(#ot1)" strokeWidth={2} name="Revenue" />
+              <Area type="monotone" dataKey="profit" stroke="#22c55e" fill="url(#ot2)" strokeWidth={2} strokeDasharray="5 3" name="Profit" />
+            </AreaChart>
+          )}
+          {selectedChart === 'Bar' && (
+            <BarChart data={revenueData} barGap={8}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <Tooltip {...ttip} formatter={(v: number) => `$${v.toLocaleString()}K`} />
+              <Legend iconType="circle" iconSize={8} />
+              <Bar dataKey="revenue" fill="#16a34a" radius={[4, 4, 0, 0]} name="Revenue" />
+              <Bar dataKey="profit" fill="#22c55e" radius={[4, 4, 0, 0]} name="Profit" />
+            </BarChart>
+          )}
+          {selectedChart === 'Line' && (
+            <LineChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+              <Tooltip {...ttip} formatter={(v: number) => `$${v.toLocaleString()}K`} />
+              <Legend iconType="circle" iconSize={8} />
+              <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={2} dot={false} name="Revenue" />
+              <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={false} strokeDasharray="5 3" name="Profit" />
+            </LineChart>
+          )}
+          {selectedChart === 'Pie' && (
+            <PieChart>
+              <Pie data={revenueData} dataKey="revenue" nameKey="month" cx="50%" cy="50%" outerRadius={80} label>
+                {revenueData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={SURVEY_COLORS[index % SURVEY_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip {...ttip} formatter={(v: number) => `$${v.toLocaleString()}K`} />
+              <Legend iconType="circle" iconSize={8} />
+            </PieChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+
+      {/* ── Statistics Summary (2 rows × 4) ── */}
       <div className={styles.kpiRow}>
         {[
           {
@@ -279,6 +382,36 @@ export default function DashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Value Across Locations ── */}
+      <div className={styles.chartCard}>
+        <div className={styles.cardHeader}>
+          <div>
+            <h3>Value Across Locations</h3>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>Revenue, orders and customers by region</p>
+          </div>
+          <div className={styles.cardActions}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.78rem', color: '#64748b' }}>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#16a34a', marginRight: 4 }} />Revenue</span>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#22c55e', marginRight: 4 }} />Orders</span>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#86efac', marginRight: 4 }} />Customers</span>
+            </div>
+            <button className={styles.moreBtn}><MoreHorizontal size={16} /></button>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={locationChartData} barGap={4}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <XAxis dataKey="location" tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} {...axis} />
+            <Tooltip {...ttip} />
+            <Legend iconType="square" iconSize={8} />
+            <Bar dataKey="revenue" fill="#16a34a" radius={[4, 4, 0, 0]} maxBarSize={28} name="Revenue" />
+            <Bar dataKey="orders" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={28} name="Orders" />
+            <Bar dataKey="customers" fill="#86efac" radius={[4, 4, 0, 0]} maxBarSize={28} name="Customers" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* ── Main Content: Chart (Left) + Side Panels (Right) ── */}

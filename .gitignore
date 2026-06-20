@@ -19,10 +19,12 @@ frontend/.angular/
 frontend/coverage/
 
 # Backend
+backend/dist/
 backend/target/
 backend/.classpath
 backend/.project
 backend/.settings/
+backend/node_modules/
 
 # Archives
 *.zip
