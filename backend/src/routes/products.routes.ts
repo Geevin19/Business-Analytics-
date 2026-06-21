@@ -4,6 +4,23 @@ import { supabase } from '../lib/supabase'
 
 const router = Router()
 
+interface ProductWithInventory {
+  id: string
+  name: string
+  category: string
+  price: number
+  inventory?: { stock_quantity: number }[]
+}
+
+interface MappedProduct {
+  id: string
+  name: string
+  category: string
+  price: number
+  quantity: number
+  status: string
+}
+
 // List products with inventory info
 router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
   const { data, error } = await supabase
@@ -13,7 +30,7 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
 
   if (error) { res.status(500).json({ message: error.message }); return }
 
-  const mapped = (data ?? []).map((p: any) => ({
+  const mapped: MappedProduct[] = (data ?? []).map((p: ProductWithInventory) => ({
     id: p.id,
     name: p.name,
     category: p.category,
@@ -34,7 +51,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res: Respo
   // create inventory entry
   try {
     await supabase.from('inventory').insert({ product_id: data.id, stock_quantity: initialStock })
-  } catch (e) { /* non-blocking */ }
+  } catch (_e) { /* non-blocking */ }
 
   res.status(201).json(data)
 })

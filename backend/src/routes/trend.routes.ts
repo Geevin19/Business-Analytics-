@@ -36,7 +36,8 @@ router.post('/upload', authenticate, (req: AuthRequest, res: Response) => {
   try {
     upload.single('file')(req as any, res as any, (err: any) => {
       if (err) {
-        return res.status(400).json({ message: err.message || 'Upload failed' })
+        const message = err instanceof Error ? err.message : 'Upload failed'
+        return res.status(400).json({ message })
       }
 
       const file = (req as any).file
@@ -56,8 +57,9 @@ router.post('/upload', authenticate, (req: AuthRequest, res: Response) => {
       const result = processUpload(userId, id, fileName, fileType, content, buffer, schedule)
       res.json(result)
     })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message || 'Upload failed' })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Upload failed'
+    res.status(500).json({ message })
   }
 })
 
@@ -87,8 +89,9 @@ router.post('/upload-data', authenticate, (req: AuthRequest, res: Response) => {
 
     const result = processUpload(userId, id, name, type, content, undefined, sched)
     res.json(result)
-  } catch (error: any) {
-    res.status(500).json({ message: error.message || 'Upload failed' })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Upload failed'
+    res.status(500).json({ message })
   }
 })
 
@@ -127,7 +130,8 @@ router.post('/datasets/:id/append', authenticate, (req: AuthRequest, res: Respon
   try {
     upload.single('file')(req as any, res as any, (err: any) => {
       if (err) {
-        return res.status(400).json({ message: err.message || 'Upload failed' })
+        const message = err instanceof Error ? err.message : 'Upload failed'
+        return res.status(400).json({ message })
       }
 
       const file = (req as any).file
@@ -158,8 +162,9 @@ router.post('/datasets/:id/append', authenticate, (req: AuthRequest, res: Respon
       }
       res.json(updated)
     })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message || 'Append failed' })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Append failed'
+    res.status(500).json({ message })
   }
 })
 

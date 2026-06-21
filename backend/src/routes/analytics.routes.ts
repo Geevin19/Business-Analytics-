@@ -4,6 +4,40 @@ import { supabase } from '../lib/supabase'
 
 const router = Router()
 
+interface SaleRecord {
+  total: number
+  sale_date: string
+  region: string
+  product_id?: string
+}
+
+interface CustomerRecord {
+  id: string
+  created_at: string
+}
+
+interface ProductRecord {
+  id: string
+  name: string
+}
+
+interface MonthlyGrowthItem {
+  month: string
+  revenue: number
+  sales: number
+  customers: number
+}
+
+interface RegionalPerformanceItem {
+  region: string
+  value: number
+}
+
+interface ProductPerformanceItem {
+  name: string
+  sales: number
+}
+
 // Returns analytics overview used by admin dashboard and analytics pages
 router.get('/overview', authenticate, async (_req: AuthRequest, res: Response) => {
   const now = new Date()
@@ -20,34 +54,41 @@ router.get('/overview', authenticate, async (_req: AuthRequest, res: Response) =
     supabase.from('products').select('id, name'),
   ])
 
-  const monthlyGrowth = monthKeys.map((m, idx) => {
+  const saleRecords = (sales ?? []) as SaleRecord[]
+  const customerRecords = (customers ?? []) as CustomerRecord[]
+  const productRecords = (products ?? []) as ProductRecord[]
+
+  const monthlyGrowth: MonthlyGrowthItem[] = monthKeys.map((m, idx) => {
     const monthIndex = new Date(now.getFullYear(), now.getMonth() - (months - 1 - idx), 1)
     const start = new Date(monthIndex.getFullYear(), monthIndex.getMonth(), 1)
     const end = new Date(monthIndex.getFullYear(), monthIndex.getMonth() + 1, 1)
-    const rev = (sales ?? []).filter((s: any) => {
+    const rev = saleRecords.filter((s: SaleRecord) => {
       const d = new Date(s.sale_date)
       return d >= start && d < end
-    }).reduce((sum: number, s: any) => sum + Number(s.total ?? 0), 0)
-    const saleCount = (sales ?? []).filter((s: any) => {
+    }).reduce((sum: number, s: SaleRecord) => sum + Number(s.total ?? 0), 0)
+    const saleCount = saleRecords.filter((s: SaleRecord) => {
       const d = new Date(s.sale_date)
       return d >= start && d < end
     }).length
-    const custCount = (customers ?? []).filter((c: any) => {
+    const custCount = customerRecords.filter((c: CustomerRecord) => {
       const d = new Date(c.created_at)
       return d >= start && d < end
     }).length
     return { month: m, revenue: Math.round(rev / 1000), sales: saleCount, customers: custCount }
   })
 
-  const regionalPerformance = ['North', 'East', 'South', 'West'].map(r => ({
+  const regionalPerformance: RegionalPerformanceItem[] = ['North', 'East', 'South', 'West'].map(r => ({
     region: r,
-    value: (sales ?? []).filter((s: any) => s.region === r).reduce((sum: number, s: any) => sum + Number(s.total ?? 0), 0)
+    value: saleRecords.filter((s: SaleRecord) => s.region === r).reduce((sum: number, s: SaleRecord) => sum + Number(s.total ?? 0), 0)
   }))
 
   // product performance: top 5 by total sales amount
   const prodMap: Record<string, number> = {};
-  (sales ?? []).forEach((s: any) => { if (s.product_id) prodMap[s.product_id] = (prodMap[s.product_id] || 0) + Number(s.total ?? 0) })
-  const productPerformance = (products ?? []).map((p: any) => ({ name: p.name, sales: prodMap[p.id] ?? 0 })).sort((a: any, b: any) => b.sales - a.sales).slice(0, 10)
+  saleRecords.forEach((s: SaleRecord) => { if (s.product_id) prodMap[s.product_id] = (prodMap[s.product_id] || 0) + Number(s.total ?? 0) })
+  const productPerformance: ProductPerformanceItem[] = productRecords
+    .map((p: ProductRecord) => ({ name: p.name, sales: prodMap[p.id] ?? 0 }))
+    .sort((a: ProductPerformanceItem, b: ProductPerformanceItem) => b.sales - a.sales)
+    .slice(0, 10)
 
   const recentActivities = (await supabase.from('audit_logs').select('user_email, action, created_at').order('created_at', { ascending: false }).limit(10)).data || []
 

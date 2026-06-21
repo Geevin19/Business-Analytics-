@@ -11,6 +11,12 @@ const RegisterSchema = z.object({
   password: z.string().min(8),
 })
 
+interface GenerateLinkResponse {
+  properties?: {
+    action_link?: string
+  }
+}
+
 // ── Register ──────────────────────────────────────────────────────────────
 router.post('/register', async (req: Request, res: Response) => {
   const parsed = RegisterSchema.safeParse(req.body)
@@ -32,7 +38,7 @@ router.post('/register', async (req: Request, res: Response) => {
   // Generate a verification link via Supabase admin API
   let verificationLink: string | null = null
   try {
-    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
+    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as (params: { type: string; email: string }) => Promise<{ data: GenerateLinkResponse | null; error: Error | null }>)({
       type: 'signup',
       email,
     })
@@ -97,7 +103,7 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
 
   try {
     // Generate a new verification link
-    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
+    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as (params: { type: string; email: string }) => Promise<{ data: GenerateLinkResponse | null; error: Error | null }>)({
       type: 'signup',
       email,
     })
@@ -129,7 +135,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 
   try {
     // Generate a password reset link via Supabase admin API
-    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
+    const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as (params: { type: string; email: string }) => Promise<{ data: GenerateLinkResponse | null; error: Error | null }>)({
       type: 'recovery',
       email,
     })
