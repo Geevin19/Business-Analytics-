@@ -90,7 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (error) throw { message: error.message }
 
-    // If identity verification is used, a verification link might be needed
     const result: { verificationLink?: string } = {}
     if (data?.user?.identities?.length === 0) {
       throw { message: 'An account with this email already exists.' }
@@ -98,8 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check if user needs manual verification (no email sent in dev)
     if (data?.user?.confirmation_sent_at && !data?.session) {
-      // Try to get the verification link from the user metadata
-      // In development, Supabase may not send real emails
       result.verificationLink = `${window.location.origin}/auth/login`
     }
 

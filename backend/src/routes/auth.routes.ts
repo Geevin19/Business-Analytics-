@@ -2,11 +2,6 @@ import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { supabase } from '../lib/supabase'
 import { authenticate, AuthRequest } from '../middleware/auth.middleware'
-import {
-  sendWelcomeEmail,
-  sendPasswordResetEmail,
-  sendLoginAlertEmail,
-} from '../services/email.service'
 
 const router = Router()
 
@@ -48,23 +43,16 @@ router.post('/register', async (req: Request, res: Response) => {
     console.error('Failed to generate verification link:', e)
   }
 
-  // Send a branded welcome email with verification link
-  try {
-    await sendWelcomeEmail(email, name, verificationLink)
-  } catch (e) {
-    console.error('Welcome email error:', e)
-  }
-
   // insert welcome notification
   await supabase.from('notifications').insert({
     user_id: data.user.id,
     title: 'Welcome to BizAnalytics!',
-    message: `Hi ${name}, please check your email to verify your account before logging in.`,
+    message: `Hi ${name}, your account has been created. Please verify your email before logging in.`,
     type: 'SUCCESS',
   })
 
   // ✅ Do NOT auto-login — user must verify email first
-  // Return the verification link as a fallback in case email delivery fails
+  // Return the verification link as a fallback
   res.status(201).json({
     message: 'Account created successfully! Please check your email to verify your account before logging in.',
     verificationLink: verificationLink || undefined,
@@ -95,9 +83,6 @@ router.post('/login', async (req: Request, res: Response) => {
 
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
 
-  // send login alert email (non-blocking)
-  try { await sendLoginAlertEmail(email, profile?.name ?? 'there') } catch (e) { console.error('Email error:', e) }
-
   // return full session so client can set Supabase client session
   res.json({
     session: data.session,
@@ -105,7 +90,7 @@ router.post('/login', async (req: Request, res: Response) => {
   })
 })
 
-// ── Resend verification email ─────────────────────────────────────────────
+// ── Resend verification ───────────────────────────────────────────────────
 router.post('/resend-verification', async (req: Request, res: Response) => {
   const { email } = req.body
   if (!email) { res.status(400).json({ message: 'Email required' }); return }
@@ -117,18 +102,16 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
       email,
     })
     if (!linkError && linkData?.properties?.action_link) {
-      // Send verification email
-      await sendWelcomeEmail(email, linkData.properties?.name ?? 'there', linkData.properties.action_link)
       res.json({
-        message: 'Verification email resent. Please check your inbox.',
+        message: 'Verification link generated. Use the link to verify your account.',
         verificationLink: linkData.properties.action_link,
       })
     } else {
-      res.status(400).json({ message: 'Could not send verification email. Please try again.' })
+      res.status(400).json({ message: 'Could not generate verification link. Please try again.' })
     }
   } catch (e) {
-    console.error('Verification email error:', e)
-    res.status(500).json({ message: 'Failed to send verification email.' })
+    console.error('Verification link error:', e)
+    res.status(500).json({ message: 'Failed to generate verification link.' })
   }
 })
 
@@ -145,21 +128,16 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
   if (!email) { res.status(400).json({ message: 'Email required' }); return }
 
   try {
-    // Generate a password reset link via Supabase admin API (no email sent)
+    // Generate a password reset link via Supabase admin API
     const { data: linkData, error: linkError } = await (supabase.auth.admin.generateLink as any)({
       type: 'recovery',
       email,
     })
-    if (!linkError && linkData?.properties?.action_link) {
-      // Send the branded reset email ourselves via Gmail app password
-      await sendPasswordResetEmail(email, linkData.properties.action_link)
-    } else {
-      // Fallback: send generic link
-      const fallbackLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password`
-      await sendPasswordResetEmail(email, fallbackLink)
+    if (linkError) {
+      console.error('Reset link error:', linkError)
     }
   } catch (e) {
-    console.error('Reset email error:', e)
+    console.error('Reset link error:', e)
   }
 
   // always respond OK (security: don't reveal if email exists)
